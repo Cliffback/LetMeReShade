@@ -129,6 +129,22 @@ fi
 RELEASE_DIR="LetMeReShade"
 ZIP_NAME="LetMeReShade_v${VERSION}.zip"
 
+# Check if zip already exists in dry-run mode and bump version if needed
+if [[ "$DRY_RUN" == true ]] && [[ -f "${ZIP_NAME}" ]]; then
+    echo -e "${YELLOW}[DRY RUN] Zip file ${ZIP_NAME} already exists, bumping patch version...${NC}"
+
+    # Extract version parts (assuming semantic versioning like 1.8.1)
+    IFS='.' read -r MAJOR MINOR PATCH <<< "${VERSION}"
+
+    # Bump patch version
+    PATCH=$((PATCH + 1))
+    VERSION="${MAJOR}.${MINOR}.${PATCH}"
+    ZIP_NAME="LetMeReShade_v${VERSION}.zip"
+
+    echo -e "${YELLOW}[DRY RUN] New version: ${VERSION}${NC}"
+    echo -e "${YELLOW}[DRY RUN] New zip name: ${ZIP_NAME}${NC}"
+fi
+
 echo -e "${BLUE}Creating release package...${NC}"
 
 # Create temporary directory structure
