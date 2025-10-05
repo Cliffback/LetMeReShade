@@ -25,37 +25,42 @@ echo -e "${BLUE}=== LetMeReShade Release Builder ===${NC}"
 echo -e "${YELLOW}Current version: ${CURRENT_VERSION}${NC}"
 echo ""
 
-# Ask build type
-echo -e "${GREEN}Select build type:${NC}"
-echo "1) Dev build (${CURRENT_VERSION}-dev-YYYYMMDD-hash)"
-echo "2) Production release (new version number)"
-read -p "Enter choice [1-2]: " BUILD_TYPE
-
-if [[ "$BUILD_TYPE" == "1" ]]; then
-    # Dev build
-    DATE=$(date +%Y%m%d)
-    SHORT_HASH=$(git rev-parse --short HEAD)
-    VERSION="${CURRENT_VERSION}-dev-${DATE}-${SHORT_HASH}"
-    IS_DEV=true
-    echo -e "${YELLOW}Creating dev build: ${VERSION}${NC}"
-elif [[ "$BUILD_TYPE" == "2" ]]; then
-    # Production build
+# In dry-run mode, default to production build with bumped patch version
+if [[ "$DRY_RUN" == true ]]; then
     IS_DEV=false
-    echo -e "${GREEN}Creating production release${NC}"
-    read -p "Enter new version number (e.g., 1.9, 2.0): " NEW_VERSION
+    # Bump patch version from current
+    IFS='.' read -r MAJOR MINOR PATCH <<< "${CURRENT_VERSION}"
+    PATCH=$((PATCH + 1))
+    VERSION="${MAJOR}.${MINOR}.${PATCH}"
+    echo -e "${YELLOW}[DRY RUN] Using bumped version: ${VERSION}${NC}"
+else
+    # Ask build type
+    echo -e "${GREEN}Select build type:${NC}"
+    echo "1) Dev build (${CURRENT_VERSION}-dev-YYYYMMDD-hash)"
+    echo "2) Production release (new version number)"
+    read -p "Enter choice [1-2]: " BUILD_TYPE
 
-    if [[ -z "$NEW_VERSION" ]]; then
-        echo -e "${RED}Error: Version number cannot be empty${NC}"
-        exit 1
-    fi
+    if [[ "$BUILD_TYPE" == "1" ]]; then
+        # Dev build
+        DATE=$(date +%Y%m%d)
+        SHORT_HASH=$(git rev-parse --short HEAD)
+        VERSION="${CURRENT_VERSION}-dev-${DATE}-${SHORT_HASH}"
+        IS_DEV=true
+        echo -e "${YELLOW}Creating dev build: ${VERSION}${NC}"
+    elif [[ "$BUILD_TYPE" == "2" ]]; then
+        # Production build
+        IS_DEV=false
+        echo -e "${GREEN}Creating production release${NC}"
+        read -p "Enter new version number (e.g., 1.9, 2.0): " NEW_VERSION
 
-    VERSION="$NEW_VERSION"
-    echo -e "${YELLOW}New version will be: ${VERSION}${NC}"
+        if [[ -z "$NEW_VERSION" ]]; then
+            echo -e "${RED}Error: Version number cannot be empty${NC}"
+            exit 1
+        fi
 
-    if [[ "$DRY_RUN" == true ]]; then
-        echo -e "${YELLOW}[DRY RUN] Would update version in package.json${NC}"
-        echo -e "${YELLOW}[DRY RUN] Would commit version change${NC}"
-    else
+        VERSION="$NEW_VERSION"
+        echo -e "${YELLOW}New version will be: ${VERSION}${NC}"
+
         # Update version in package.json
         echo -e "${BLUE}Updating version in package.json...${NC}"
         sed -i.bak "s/\"version\": \"${CURRENT_VERSION}\"/\"version\": \"${VERSION}\"/" package.json
@@ -69,10 +74,10 @@ elif [[ "$BUILD_TYPE" == "2" ]]; then
             git add package.json
             git commit -m "chore: bump version to ${VERSION}"
         fi
+    else
+        echo -e "${RED}Invalid choice. Exiting.${NC}"
+        exit 1
     fi
-else
-    echo -e "${RED}Invalid choice. Exiting.${NC}"
-    exit 1
 fi
 
 # Verify clean working directory (except for the version commit we just made)
@@ -170,7 +175,7 @@ rm -rf "${RELEASE_DIR}"
 echo -e "${GREEN}✓ Release package created: ${ZIP_NAME}${NC}"
 
 # For production builds, create git tag and GitHub release
-if [[ "$IS_DEV" == false ]]; then
+if [[ "$IS_DEV" == false ]] && [[ "$DRY_RUN" == false ]]; then
     TAG_NAME="v${VERSION}"
 
     echo ""
