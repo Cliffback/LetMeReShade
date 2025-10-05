@@ -135,19 +135,25 @@ RELEASE_DIR="LetMeReShade"
 ZIP_NAME="LetMeReShade_v${VERSION}.zip"
 
 # Check if zip already exists in dry-run mode and bump version if needed
-if [[ "$DRY_RUN" == true ]] && [[ -f "${ZIP_NAME}" ]]; then
-    echo -e "${YELLOW}[DRY RUN] Zip file ${ZIP_NAME} already exists, bumping patch version...${NC}"
+if [[ "$DRY_RUN" == true ]]; then
+    while [[ -f "${ZIP_NAME}" ]]; do
+        echo -e "${YELLOW}[DRY RUN] Zip file ${ZIP_NAME} already exists, bumping patch version...${NC}"
 
-    # Extract version parts (assuming semantic versioning like 1.8.1)
-    IFS='.' read -r MAJOR MINOR PATCH <<< "${VERSION}"
+        # Extract version parts (assuming semantic versioning like 1.8.1)
+        IFS='.' read -r MAJOR MINOR PATCH <<< "${VERSION}"
 
-    # Bump patch version
-    PATCH=$((PATCH + 1))
-    VERSION="${MAJOR}.${MINOR}.${PATCH}"
-    ZIP_NAME="LetMeReShade_v${VERSION}.zip"
+        # Bump patch version
+        PATCH=$((PATCH + 1))
+        VERSION="${MAJOR}.${MINOR}.${PATCH}"
+        ZIP_NAME="LetMeReShade_v${VERSION}.zip"
 
-    echo -e "${YELLOW}[DRY RUN] New version: ${VERSION}${NC}"
-    echo -e "${YELLOW}[DRY RUN] New zip name: ${ZIP_NAME}${NC}"
+        echo -e "${YELLOW}[DRY RUN] Trying version: ${VERSION}${NC}"
+    done
+
+    if [[ "${ZIP_NAME}" != "LetMeReShade_v${MAJOR}.${MINOR}.$((PATCH - 1)).zip" ]]; then
+        echo -e "${YELLOW}[DRY RUN] Final version: ${VERSION}${NC}"
+        echo -e "${YELLOW}[DRY RUN] Final zip name: ${ZIP_NAME}${NC}"
+    fi
 fi
 
 echo -e "${BLUE}Creating release package...${NC}"
