@@ -154,6 +154,10 @@ if [[ "$DRY_RUN" == true ]]; then
         echo -e "${YELLOW}[DRY RUN] Final version: ${VERSION}${NC}"
         echo -e "${YELLOW}[DRY RUN] Final zip name: ${ZIP_NAME}${NC}"
     fi
+
+    # Temporarily update package.json version for the zip
+    echo -e "${YELLOW}[DRY RUN] Temporarily updating package.json to version ${VERSION} for zip...${NC}"
+    sed -i.bak "s/\"version\": \"${CURRENT_VERSION}\"/\"version\": \"${VERSION}\"/" package.json
 fi
 
 echo -e "${BLUE}Creating release package...${NC}"
@@ -170,6 +174,12 @@ cp package.json "${RELEASE_DIR}/"
 cp plugin.json "${RELEASE_DIR}/"
 cp LICENSE "${RELEASE_DIR}/"
 cp README.md "${RELEASE_DIR}/"
+
+# Restore package.json if this was a dry-run
+if [[ "$DRY_RUN" == true ]] && [[ -f "package.json.bak" ]]; then
+    echo -e "${YELLOW}[DRY RUN] Restoring original package.json...${NC}"
+    mv package.json.bak package.json
+fi
 
 # Create zip file
 echo -e "${BLUE}Creating zip file: ${ZIP_NAME}${NC}"
