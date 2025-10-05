@@ -32,7 +32,6 @@ if [[ "$DRY_RUN" == true ]]; then
     IFS='.' read -r MAJOR MINOR PATCH <<< "${CURRENT_VERSION}"
     PATCH=$((PATCH + 1))
     VERSION="${MAJOR}.${MINOR}.${PATCH}"
-    echo -e "${YELLOW}[DRY RUN] Using bumped version: ${VERSION}${NC}"
 else
     # Ask build type
     echo -e "${GREEN}Select build type:${NC}"
