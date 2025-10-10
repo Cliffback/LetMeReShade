@@ -225,6 +225,33 @@ We welcome community contributions! Here's how you can help:
 - Share custom presets with the community
 - Include screenshots and compatibility notes
 
+## 🛠️ Development
+
+### 📦 Creating a Dev Build
+
+For developers who want to test local changes easily, follow these steps:
+
+1. **🔨 Build the Plugin**
+   ```bash
+   pnpm run dev-build
+   ```
+
+2. **📁 Locate the Build**
+
+   The script creates a versioned zip file in the `builds/` directory:
+   ```
+   builds/LetUsReShade_v1.8.0-dev.1.zip
+   ```
+
+   The dev counter automatically increments if a build with the same version already exists.
+
+3. **📲 Install on Steam Deck**
+
+   - Extract the zip file contents
+   - Copy the `LetUsReShade` folder to: `~/homebrew/plugins/`
+   - Enable Developer Mode in Decky Loader settings
+   - Install the plugin from the zip file
+
 ## 🔄 Automatic Updates
 
 The plugin provides seamless updates for:
