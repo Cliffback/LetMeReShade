@@ -275,14 +275,18 @@ function ReShadeInstallerSection() {
             onConfirm={async (selectedShaders: string[]) => {
               try {
                 setInstalling(true);
+
+                // Save shader preferences so future config comparisons work correctly
+                await saveShaderPreferences(selectedShaders);
+
                 const result = await runInstallReShade(
-                  addonEnabled, 
-                  selectedVersion.value, 
-                  autoHdrEnabled, 
+                  addonEnabled,
+                  selectedVersion.value,
+                  autoHdrEnabled,
                   selectedShaders
                 );
                 setInstallResult(result);
-                
+
                 // If installation was successful, reload installed config
                 if (result.status === "success") {
                   const configResult = await loadInstalledConfiguration();
