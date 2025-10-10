@@ -1,0 +1,62 @@
+name: Test Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      test_version:
+        description: 'Test version number (e.g., 1.8.0)'
+        required: false
+        default: '0.0.0-test'
+
+jobs:
+  test-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build plugin
+        run: pnpm run build
+
+      - name: Create release package
+        run: |
+          VERSION="${{ github.event.inputs.test_version }}"
+          VERSION="${VERSION#v}"  # Remove 'v' prefix if present
+          RELEASE_DIR="LetUsReShade"
+          ZIP_NAME="LetUsReShade_v${VERSION}.zip"
+
+          # Create temporary directory structure
+          mkdir -p "${RELEASE_DIR}"
+
+          # Copy necessary files
+          cp -r dist "${RELEASE_DIR}/"
+          cp -r defaults "${RELEASE_DIR}/"
+          cp main.py "${RELEASE_DIR}/"
+          cp package.json "${RELEASE_DIR}/"
+          cp plugin.json "${RELEASE_DIR}/"
+          cp LICENSE "${RELEASE_DIR}/"
+          cp README.md "${RELEASE_DIR}/"
+
+          # Create zip file
+          zip -r "${ZIP_NAME}" "${RELEASE_DIR}"
+
+          echo "✅ Test build complete: ${ZIP_NAME}"
+          ls -lh "${ZIP_NAME}"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-build
+          path: LetUsReShade_v*.zip
+          retention-days: 7
