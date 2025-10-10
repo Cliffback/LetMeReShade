@@ -1,10 +1,12 @@
-# LetUsReShade 🎮 
-*A fork of [LetMeReshade](https://github.com/itsOwen/LetMeReShade) by [itsOwen](https://github.com/itsOwen/LetMeReShade)*
+# LetUsReShade 🎮
+*A community-maintained fork of [LetMeReShade](https://github.com/itsOwen/LetMeReShade) by [itsOwen](https://github.com/itsOwen).*
 
-All credits goes to the original author for his incredible work. 
-The plan for this fork is too keep the project alive, updating it to support future versions of ReShade, as  well as some quality of life fixes etc. as [itsOwen](https://github.com/itsOwen/LetMeReShade) has voiced that he won't have the time to keep maintaining the original project himself anymore.
+All credit goes to the original author for his incredible work.  
+The goal of this fork is to keep the project alive — updating it to support future versions of ReShade, as well as adding quality-of-life improvements and fixes — since [itsOwen](https://github.com/itsOwen) has mentioned that he won’t have time to maintain the original project anymore.
 
-Contributions are most welcome.
+Initially based on **LetMeReShade v1.8**, this fork continues from **v1.8.1** to preserve versioning continuity.
+
+Contributions and feedback are very welcome!
 
 [![Decky Plugin](https://img.shields.io/badge/Decky-Plugin-brightgreen.svg)](https://github.com/SteamDeckHomebrew/decky-loader)
 [![License](https://img.shields.io/badge/license-BSD--3-blue.svg)](LICENSE)
