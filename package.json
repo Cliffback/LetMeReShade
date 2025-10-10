@@ -7,7 +7,7 @@
     "build": "rollup -c",
     "watch": "rollup -c -w",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev-release": "node scripts/create-dev-release.js"
+    "dev-build": "node scripts/create-dev-build.js"
   },
   "repository": {
     "type": "git",
