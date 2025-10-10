@@ -1,0 +1,77 @@
+name: Release Please
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+    steps:
+      - uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+          release-type: node
+
+  build-and-release:
+    needs: release-please
+    if: ${{ needs.release-please.outputs.release_created }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build plugin
+        run: pnpm run build
+
+      - name: Create release package
+        run: |
+          VERSION="${{ needs.release-please.outputs.tag_name }}"
+          VERSION="${VERSION#v}"  # Remove 'v' prefix if present
+          RELEASE_DIR="LetUsReShade"
+          ZIP_NAME="LetUsReShade_v${VERSION}.zip"
+
+          # Create temporary directory structure
+          mkdir -p "${RELEASE_DIR}"
+
+          # Copy necessary files
+          cp -r dist "${RELEASE_DIR}/"
+          cp -r defaults "${RELEASE_DIR}/"
+          cp main.py "${RELEASE_DIR}/"
+          cp package.json "${RELEASE_DIR}/"
+          cp plugin.json "${RELEASE_DIR}/"
+          cp LICENSE "${RELEASE_DIR}/"
+          cp README.md "${RELEASE_DIR}/"
+
+          # Create zip file
+          zip -r "${ZIP_NAME}" "${RELEASE_DIR}"
+
+          echo "ZIP_NAME=${ZIP_NAME}" >> $GITHUB_ENV
+
+      - name: Upload release asset
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+        run: |
+          gh release upload ${{ needs.release-please.outputs.tag_name }} \
+            "${ZIP_NAME}" \
+            --repo ${{ github.repository }}
