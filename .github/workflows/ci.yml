@@ -19,6 +19,7 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
+      - run: sudo apt-get update && sudo apt-get install -y shellcheck
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
   build:
@@ -41,3 +42,22 @@ jobs:
         with:
           name: letusreshade-decky
           path: letusreshade-decky.tgz
+  # Commented out until tests are implemented
+  # test:
+  #   runs-on: ubuntu-latest
+  #   needs:
+  #     - build
+  #   steps:
+  #     - uses: actions/checkout@v5
+  #     - uses: actions/download-artifact@v5
+  #       with:
+  #         name: letusreshade-decky
+  #     - run: |
+  #         tar xf letusreshade-decky.tgz
+  #     - uses: actions/setup-node@v4
+  #       with:
+  #         node-version: 24
+  #         cache: pnpm
+  #     - run: pnpm install --frozen-lockfile
+  #     - run: pnpm test
+

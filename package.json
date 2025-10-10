@@ -7,7 +7,10 @@
     "build": "rollup -c",
     "watch": "rollup -c -w",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "lint": "biome check",
+    "lint": "biome check && shellcheck defaults/assets/*.sh",
+    "lint:js": "biome check",
+    "lint:js:fix": "biome check --fix",
+    "lint:sh": "shellcheck defaults/assets/*.sh",
     "dev-build": "node scripts/create-dev-build.js"
   },
   "repository": {
