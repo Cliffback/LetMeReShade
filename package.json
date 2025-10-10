@@ -1,12 +1,13 @@
 {
-  "name": "letmereshade-decky",
-  "version": "1.8",
+  "name": "letusreshade-decky",
+  "version": "1.8.0",
   "description": "ReShade plugin for Steam Deck - Enhanced version with improved shader selection and game management",
   "type": "module",
   "scripts": {
     "build": "rollup -c",
     "watch": "rollup -c -w",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev-release": "node scripts/create-dev-release.js"
   },
   "repository": {
     "type": "git",
