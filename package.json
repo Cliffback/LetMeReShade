@@ -7,6 +7,7 @@
     "build": "rollup -c",
     "watch": "rollup -c -w",
     "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "biome check",
     "dev-build": "node scripts/create-dev-build.js"
   },
   "repository": {
@@ -28,6 +29,7 @@
   },
   "homepage": "https://github.com/itsOwen/LetMeReShade.git",
   "devDependencies": {
+    "@biomejs/biome": "^2.2.5",
     "@decky/rollup": "^1.0.1",
     "@decky/ui": "^4.7.2",
     "@types/react": "18.3.3",

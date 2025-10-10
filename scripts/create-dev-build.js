@@ -1,9 +1,16 @@
 #!/usr/bin/env node
 
-import { readFileSync, writeFileSync, existsSync, mkdirSync, cpSync, rmSync } from 'fs';
 import { execSync } from 'child_process';
-import { fileURLToPath } from 'url';
+import {
+  cpSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'fs';
 import { dirname, join } from 'path';
+import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -26,7 +33,9 @@ const log = {
 };
 
 console.log(`${colors.yellow}=== DEV RELEASE MODE ===${colors.reset}`);
-console.log(`${colors.yellow}No changes will be committed or published${colors.reset}\n`);
+console.log(
+  `${colors.yellow}No changes will be committed or published${colors.reset}\n`,
+);
 
 // Change to root directory
 process.chdir(rootDir);
@@ -143,10 +152,15 @@ if (devCounter > 1) {
 }
 
 // Temporarily update package.json version for the zip
-log.warning(`Temporarily updating package.json to version ${version} for zip...`);
+log.warning(
+  `Temporarily updating package.json to version ${version} for zip...`,
+);
 const originalPackageJson = readFileSync(packageJsonPath, 'utf8');
 const updatedPackageJson = { ...packageJson, version };
-writeFileSync(packageJsonPath, JSON.stringify(updatedPackageJson, null, 2) + '\n');
+writeFileSync(
+  packageJsonPath,
+  JSON.stringify(updatedPackageJson, null, 2) + '\n',
+);
 
 log.info('Creating release package...');
 
