@@ -4,7 +4,7 @@
 All credit goes to the original author for his incredible work.  
 The goal of this fork is to keep the project alive — updating it to support future versions of ReShade, as well as adding quality-of-life improvements and fixes — since [itsOwen](https://github.com/itsOwen) has mentioned that he won’t have time to maintain the original project anymore.
 
-Initially based on **LetMeReShade v1.8**, this fork continues from **v1.8.1** to preserve versioning continuity.
+Initially based on **LetMeReShade v1.8**, this fork uses semantic versioning via release-please, continuing from v1.8.0 as its baseline.
 
 Contributions and feedback are very welcome!
 
