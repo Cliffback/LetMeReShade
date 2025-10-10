@@ -55,3 +55,9 @@ out/*
 cli/
 cli/*
 cli/decky
+
+# Ignore local builds folder
+builds
+
+# Ignore zips
+*.zip
