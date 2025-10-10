@@ -29,12 +29,12 @@
   },
   "homepage": "https://github.com/itsOwen/LetMeReShade.git",
   "devDependencies": {
+    "@biomejs/biome": "^2.2.5",
     "@decky/rollup": "^1.0.1",
     "@decky/ui": "^4.7.2",
     "@types/react": "18.3.3",
     "@types/react-dom": "18.3.0",
     "@types/webpack": "^5.28.5",
-    "biome": "link:@@biomejs/biome",
     "rollup": "^4.22.5",
     "typescript": "^5.6.2"
   },
