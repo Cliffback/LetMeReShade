@@ -1,4 +1,4 @@
-# LetUsReShade 🎮
+# LetMeReShade 🎮
 *A community-maintained fork of [LetMeReShade](https://github.com/itsOwen/LetMeReShade) by [itsOwen](https://github.com/itsOwen).*
 
 All credit goes to the original author for his incredible work.  
@@ -15,24 +15,21 @@ Contributions and feedback are very welcome!
 ![Downloads](https://patient-fire-5dbf.owensingh72.workers.dev/downloads)
 ![Updates](https://patient-fire-5dbf.owensingh72.workers.dev/updates)
 
-> 🚀 **Ultimate Steam Deck Graphics Enhancement Suite** - Advanced shader customization with ReShade and VkBasalt support for next-level visual fidelity
+> 🚀 **Ultimate Steam Deck Graphics Enhancement Suite** - Advanced shader customization with ReShade for next-level visual fidelity
 
 ![LetMeReShade Banner](assets/shade.jpg)
 
 ## ✨ Features
 
-### 🎨 **Dual Enhancement Engines**
-- **ReShade** - Industry-standard post-processing for DirectX/OpenGL games
-- **VkBasalt** - High-performance Vulkan-native shader pipeline
-
 ### 🛠️ **Core Functionality**
+- **ReShade** - Industry-standard post-processing for DirectX/OpenGL games
 - ⚡ One-click installation and management
 - 🎯 Automatic game detection and configuration
 - 🔧 Manual DLL patching capabilities
 - 🌐 Global preset management with custom shader support
 - 🎮 In-game overlay accessible via **HOME** key
-- ⚙️ Steam Deck–optimized configurations
-- 🖥️ Supports AUTO HDR for Oled Screens
+- ⚙️ Steam Deck-optimized configurations
+- 🖥️ Supports AUTO HDR for OLED Screens
 - 🎪 Full support for Heroic Games (Epic Games, GOG, Amazon Games)
 
 ## 📋 Prerequisites
@@ -65,48 +62,6 @@ Contributions and feedback are very welcome!
 
 > ⚠️ **Important Note**: ReShade conflicts with FGMOD due to shared DLL files. Uninstall or unpatch one before enabling the other.
 
-### ⚡ VkBasalt Installation
-
-Automatic installation through the plugin interface - no manual configuration required.
-
-## ⚙️ Configuration
-
-### 🎨 VkBasalt Configuration
-
-1. **📝 Configuration File Setup**
-   
-   Create or edit `~/.config/vkBasalt/vkBasalt.conf`:
-
-   ```ini
-   # Core Effects Configuration
-   effects = cas:denoise
-
-   # Path Configurations
-   reshade_effect_paths = path here
-   reshade_texture_paths = path here
-   reshade_include_paths = path here
-
-   # Effect Parameters
-   [cas]
-   sharpness = 0.65
-
-   [denoise]
-   radius = 2
-   ```
-
-2. **📂 Custom Shader Placement**
-
-   | Engine | Shader Location |
-   |--------|----------------|
-   | **ReShade** | `~/.local/share/reshade/shaders/` |
-   | **VkBasalt** | `~/.config/reshade/Shaders/` |
-
-3. **🎛️ Adding Custom Effects**
-   ```ini
-   # Append custom shader names (without .fx extension)
-   effects = your_custom_effect
-   ```
-
 ## 🎮 Usage
 
 ### 🏁 Initial Setup
@@ -114,11 +69,7 @@ Automatic installation through the plugin interface - no manual configuration re
 1. **🔍 Access Plugin Interface**
    - Open Quick Access Menu → Navigate to LetMeReShade
 
-2. **🎯 Select Enhancement Engine**
-   - **ReShade**: For DirectX/OpenGL titles
-   - **VkBasalt**: For Vulkan-based games
-
-3. **🎛️ In-Game Access**
+2. **🎛️ In-Game Access**
    - Launch game → Press **HOME** key for overlay
 
 ### 🎨 Shader Management
@@ -240,7 +191,7 @@ For developers who want to test local changes easily, follow these steps:
 
    The script creates a versioned zip file in the `builds/` directory:
    ```
-   builds/LetUsReShade_v1.8.0-dev.1.zip
+   builds/LetMeReShade_v1.8.0-dev.1.zip
    ```
 
    The dev counter automatically increments if a build with the same version already exists.
@@ -248,7 +199,7 @@ For developers who want to test local changes easily, follow these steps:
 3. **📲 Install on Steam Deck**
 
    - Extract the zip file contents
-   - Copy the `LetUsReShade` folder to: `~/homebrew/plugins/`
+   - Copy the `LetMeReShade` folder to: `~/homebrew/plugins/`
    - Enable Developer Mode in Decky Loader settings
    - Install the plugin from the zip file
 
@@ -258,7 +209,7 @@ The plugin provides seamless updates for:
 
 | Component | Update Method |
 |-----------|---------------|
-| **🎨 ReShade/VkBasalt** | Automatic version checking |
+| **🎨 ReShade** | Automatic version checking |
 | **📚 Shader Repositories** | Background synchronization |
 | **🔌 Plugin Core** | Integrated update system |
 
