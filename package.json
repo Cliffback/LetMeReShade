@@ -1,6 +1,6 @@
 {
   "name": "letusreshade-decky",
-  "version": "1.8.0",
+  "version": "1.8.1",
   "description": "ReShade plugin for Steam Deck - Enhanced version with improved shader selection and game management",
   "type": "module",
   "scripts": {
