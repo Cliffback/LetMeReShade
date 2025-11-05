@@ -104,7 +104,7 @@ function ReShadeInstallerSection() {
   const [preferencesInfo, setPreferencesInfo] = useState<any>(null);
 
   const versionOptions: VersionOption[] = [
-    { label: 'ReShade 6.6.0', value: '6.6.0' },
+    { label: 'ReShade 6.6.2', value: '6.6.2' },
     { label: 'ReShade 6.5.1', value: '6.5.1' },
     { label: 'ReShade 6.4.1', value: '6.4.1' },
   ];
