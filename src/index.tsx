@@ -104,8 +104,8 @@ function ReShadeInstallerSection() {
   const [preferencesInfo, setPreferencesInfo] = useState<any>(null);
 
   const versionOptions: VersionOption[] = [
-    { label: 'ReShade Latest', value: 'latest' },
-    { label: 'ReShade Last Version', value: 'last' },
+    { label: 'ReShade Latest (6.5.1)', value: 'latest' },
+    { label: 'ReShade Last Version (6.5.1)', value: 'last' },
   ];
 
   useEffect(() => {
