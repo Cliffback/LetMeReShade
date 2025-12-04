@@ -134,15 +134,15 @@ if (!existsSync(buildsDir)) {
 }
 
 // Create release directory
-const releaseDir = 'LetUsReShade';
-let zipName = join(buildsDir, `LetUsReShade_v${version}.zip`);
+const releaseDir = 'LetMeReShade';
+let zipName = join(buildsDir, `LetMeReShade_v${version}.zip`);
 
 // Check if zip already exists and bump dev counter if needed
 while (existsSync(zipName)) {
   log.warning(`Zip file ${zipName} already exists, bumping dev counter...`);
   devCounter++;
   version = `${currentVersion}-dev.${devCounter}`;
-  zipName = join(buildsDir, `LetUsReShade_v${version}.zip`);
+  zipName = join(buildsDir, `LetMeReShade_v${version}.zip`);
   log.warning(`Trying version: ${version}`);
 }
 
