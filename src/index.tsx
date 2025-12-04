@@ -13,6 +13,7 @@ import { IoMdColorPalette } from 'react-icons/io';
 import HeroicGamesSection from './HeroicGamesSection';
 import ShaderSelectionModal from './ShaderSelectionModal';
 import SteamGamesSection from './SteamGamesSection';
+import { getVersionOptions, type VersionOption } from './versionOptions';
 
 interface InstallResult {
   status: string;
@@ -27,11 +28,6 @@ interface PathCheckResponse {
     version: string;
     addon: boolean;
   };
-}
-
-interface VersionOption {
-  label: string;
-  value: string;
 }
 
 interface DeckModelResponse {
@@ -103,11 +99,7 @@ function ReShadeInstallerSection() {
   const [hasPreferences, setHasPreferences] = useState<boolean>(false);
   const [preferencesInfo, setPreferencesInfo] = useState<any>(null);
 
-  const versionOptions: VersionOption[] = [
-    { label: 'ReShade 6.7.3', value: '6.7.3' },
-    { label: 'ReShade 6.6.2', value: '6.6.2' },
-    { label: 'ReShade 6.5.1', value: '6.5.1' },
-  ];
+  const versionOptions = getVersionOptions();
 
   useEffect(() => {
     const checkPath = async () => {
