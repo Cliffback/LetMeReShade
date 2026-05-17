@@ -12,13 +12,13 @@ jobs:
     runs-on: ubuntu-latest
     container: koalaman/shellcheck-alpine:stable
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - run: shellcheck defaults/assets/*.sh
 
   lint-js:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: pnpm/action-setup@v4
         with:
           version: 10
@@ -32,7 +32,7 @@ jobs:
   lint-py:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: astral-sh/ruff-action@v3
 
   build:
@@ -42,7 +42,7 @@ jobs:
       - lint-py
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: pnpm/action-setup@v4
         with:
           version: 10
