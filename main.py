@@ -1,3 +1,4 @@
+import contextlib
 import json
 import os
 import re
@@ -240,15 +241,14 @@ class Plugin:
             decky.logger.info(f"Scanning directory tree for executables and Linux indicators: {base_game_path}")
 
             # Single directory traversal
-            for root, dirs, files in os.walk(base_game_path):
+            for root, _dirs, files in os.walk(base_game_path):
                 for file in files:
                     file_path = os.path.join(root, file)
-                    file_obj = Path(file_path)
                     rel_path = os.path.relpath(file_path, base_game_path)
 
                     try:
                         file_size = os.path.getsize(file_path)
-                    except:
+                    except Exception:
                         continue
 
                     # Check for Windows executables
@@ -618,13 +618,11 @@ class Plugin:
             if not os.path.exists(game_path):
                 return {"status": "error", "message": f"Game path not found: {game_path}"}
 
-            game_path_obj = Path(game_path)
-
             # Find all executables in the game directory
             all_executables = []
 
             decky.logger.info(f"Walking directory tree starting from: {game_path}")
-            for root, dirs, files in os.walk(game_path):
+            for root, _dirs, files in os.walk(game_path):
                 for file in files:
                     if file.lower().endswith('.exe'):
                         exe_path = os.path.join(root, file)
@@ -692,7 +690,7 @@ class Plugin:
                 name_match_score = 0
 
                 # Exact matches (highest priority)
-                if norm_filename == norm_game_name or norm_filename == clean_dir_name:
+                if norm_filename in (norm_game_name, clean_dir_name):
                     name_match_score += 60
                     decky.logger.debug("  Exact name match: +60 (normalized names match exactly)")
 
@@ -891,7 +889,7 @@ class Plugin:
                 try:
                     with open(preferences_file) as f:
                         existing_preferences = json.load(f)
-                except:
+                except Exception:
                     pass  # If file is corrupted, start fresh
 
             # Update shader preferences while preserving other settings
@@ -942,10 +940,8 @@ class Plugin:
                     # Save in new format and remove old file
                     with open(preferences_file, 'w') as f:
                         json.dump(preferences, f, indent=2)
-                    try:
+                    with contextlib.suppress(Exception):
                         os.remove(old_preferences_file)
-                    except:
-                        pass
 
             if not preferences:
                 return {"status": "success", "preferences": None, "message": "No preferences file found"}
@@ -1002,7 +998,7 @@ class Plugin:
                 try:
                     with open(preferences_file) as f:
                         existing_preferences = json.load(f)
-                except:
+                except Exception:
                     pass  # If file is corrupted, start fresh
 
             # Update AutoHDR preference while preserving other settings
@@ -1334,7 +1330,7 @@ class Plugin:
             "version_info": version_info
         }
 
-    async def run_install_reshade(self, with_addon: bool = False, version: str = "latest", with_autohdr: bool = False, selected_shaders: list = None) -> dict:
+    async def run_install_reshade(self, with_addon: bool = False, version: str = "latest", with_autohdr: bool = False, selected_shaders: list | None = None) -> dict:
         try:
             assets_dir = self._get_assets_dir()
             script_path = assets_dir / "reshade-install.sh"
@@ -1508,7 +1504,7 @@ class Plugin:
                         else:
                             game_path = self._find_game_path(appid)
                             decky.logger.info(f"Using base game path for uninstall: {game_path}")
-                    except:
+                    except Exception:
                         game_path = self._find_game_path(appid)
                         decky.logger.info(f"Using base game path for uninstall (fallback): {game_path}")
 
@@ -1878,9 +1874,8 @@ class Plugin:
 
                                     # Enhanced matching for executable names
                                     if (exe_name == config_title.lower() or
-                                        exe_name_norm == config_title_norm or
+                                        exe_name_norm in (config_title_norm, app_title_norm) or
                                         exe_name == app_title.lower() or
-                                        exe_name_norm == app_title_norm or
                                         exe_name_norm in config_title_norm or
                                         exe_name_norm in app_title_norm or
                                         config_title_norm in exe_name_norm or
@@ -1998,10 +1993,9 @@ class Plugin:
                             app_name = game_info.get("appName")
 
                             # Match based on install path
-                            if (install_path == normalized_game_path or
-                                os.path.basename(install_path).lower() == base_folder_name):
-
-                                if app_name:
+                            if ((install_path == normalized_game_path or
+                                os.path.basename(install_path).lower() == base_folder_name) and
+                                app_name):
                                     decky.logger.info(f"Found match in GOG installed.json: {app_name}")
 
                                     # Search for this app_name in config files
@@ -2019,10 +2013,9 @@ class Plugin:
                                 app_name = game_info.get("appName") or game_info.get("app_name")
                                 install_path = os.path.normpath(game_info.get("install_path", ""))
 
-                                if (install_path == normalized_game_path or
-                                    os.path.basename(install_path).lower() == base_folder_name):
-
-                                    if app_name:
+                                if ((install_path == normalized_game_path or
+                                    os.path.basename(install_path).lower() == base_folder_name) and
+                                    app_name):
                                         decky.logger.info(f"Found match in Amazon installed.json: {app_name}")
 
                                         # Search for this app_name in config files
@@ -2031,14 +2024,13 @@ class Plugin:
                                             return config_result
                         else:
                             # Object format like Epic
-                            for app_id, game_info in installed_data.items():
+                            for _app_id, game_info in installed_data.items():
                                 app_name = game_info.get("appName") or game_info.get("app_name")
                                 install_path = os.path.normpath(game_info.get("install_path", ""))
 
-                                if (install_path == normalized_game_path or
-                                    os.path.basename(install_path).lower() == base_folder_name):
-
-                                    if app_name:
+                                if ((install_path == normalized_game_path or
+                                    os.path.basename(install_path).lower() == base_folder_name) and
+                                    app_name):
                                         decky.logger.info(f"Found match in Amazon installed.json: {app_name}")
 
                                         # Search for this app_name in config files
@@ -2156,7 +2148,6 @@ class Plugin:
 
             # Find architecture by checking for .exe files
             arch = "64"  # Default to 64-bit
-            exe_found = False
 
             for file in os.listdir(exe_dir):
                 if file.lower().endswith(".exe"):
@@ -2164,7 +2155,6 @@ class Plugin:
                     if any(skip in file.lower() for skip in ["unins", "launcher", "crash", "setup", "config", "redist"]):
                         continue
 
-                    exe_found = True
                     exe_path = os.path.join(exe_dir, file)
                     try:
                         # Check if 32-bit or 64-bit using the 'file' command
@@ -2396,11 +2386,11 @@ Note: If ReShadePreset.ini already existed, your previous settings were preserve
     def _find_game_executable_directory(self, path: Path, game_name: str) -> tuple[Path, float]:
         """
         Unified function to find the game executable directory with smart detection
-        
+
         Args:
             path: Base path to search for game executables
             game_name: Name of the game for matching
-            
+
         Returns:
             tuple[Path, float]: The best executable directory and its score
         """
