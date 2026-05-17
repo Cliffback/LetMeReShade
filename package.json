@@ -37,7 +37,7 @@
   "homepage": "https://github.com/itsOwen/LetMeReShade.git",
   "devDependencies": {
     "@biomejs/biome": "^2.2.5",
-    "@decky/rollup": "^1.0.1",
+    "@decky/rollup": "^1.0.2",
     "@decky/ui": "^4.7.2",
     "@types/react": "18.3.28",
     "@types/react-dom": "18.3.7",

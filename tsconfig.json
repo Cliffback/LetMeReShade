@@ -15,8 +15,7 @@
     "noImplicitThis": true,
     "noImplicitAny": true,
     "strict": true,
-    "allowSyntheticDefaultImports": true,
-    "resolveJsonModule": true
+    "allowSyntheticDefaultImports": true
   },
   "include": ["src"],
   "exclude": ["node_modules"]

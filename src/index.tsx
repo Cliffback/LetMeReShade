@@ -13,7 +13,7 @@ import { IoMdColorPalette } from 'react-icons/io';
 import HeroicGamesSection from './HeroicGamesSection';
 import ShaderSelectionModal from './ShaderSelectionModal';
 import SteamGamesSection from './SteamGamesSection';
-import { getVersionOptions, type VersionOption } from './versionOptions';
+import { getVersionOptions, VersionOption } from './versionOptions';
 
 interface InstallResult {
   status: string;
