@@ -1,6 +1,7 @@
 #!/bin/bash
 
 SEPERATOR="------------------------------------------------------------------------------------------------"
+# shellcheck disable=SC2034 # Used by reshade-game-manager.sh
 COMMON_OVERRIDES="d3d8 d3d9 d3d11 ddraw dinput8 dxgi opengl32"
 REQUIRED_EXECUTABLES="7z grep"
 XDG_DATA_HOME=${XDG_DATA_HOME:-"$HOME/.local/share"}
@@ -22,15 +23,12 @@ SCRIPT_DIR="$(dirname "$(realpath "$0")")"
 # Check if we're in defaults/assets (development)
 if [[ "$SCRIPT_DIR" == */defaults/assets ]]; then
     PLUGIN_ROOT="$(dirname "$(dirname "$SCRIPT_DIR")")"  # Go up two directories from defaults/assets
-    log_message() { echo "[DEBUG] Using defaults/assets path: $1" >&2; }
 # Check if we're in assets (decky store)
 elif [[ "$SCRIPT_DIR" == */assets ]]; then
     PLUGIN_ROOT="$(dirname "$SCRIPT_DIR")"  # Go up one directory from assets
-    log_message() { echo "[DEBUG] Using assets path: $1" >&2; }
 else
     # Fallback - assume we're in assets
     PLUGIN_ROOT="$(dirname "$SCRIPT_DIR")"
-    log_message() { echo "[DEBUG] Using fallback path: $1" >&2; }
 fi
 
 BIN_PATH="$PLUGIN_ROOT/bin"
@@ -493,7 +491,7 @@ main() {
     log_message "Installing with addon support: $RESHADE_ADDON_SUPPORT"
     
     # Set up ReShade
-    setup_reshade $RESHADE_ADDON_SUPPORT
+    setup_reshade "$RESHADE_ADDON_SUPPORT"
     
     # Set up other components
     setup_d3dcompiler "32"
