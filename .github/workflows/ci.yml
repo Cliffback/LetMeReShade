@@ -8,7 +8,14 @@ on:
       - main
   workflow_dispatch:
 jobs:
-  lint:
+  lint-bash:
+    runs-on: ubuntu-latest
+    container: koalaman/shellcheck-alpine:stable
+    steps:
+      - uses: actions/checkout@v5
+      - run: shellcheck defaults/assets/*.sh
+
+  lint-js:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -20,10 +27,19 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm lint
+      - run: pnpm lint:js
+
+  lint-py:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/ruff-action@v3
+
   build:
-    needs: 
-      - lint
+    needs:
+      - lint-bash
+      - lint-js
+      - lint-py
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -41,3 +57,21 @@ jobs:
         with:
           name: letusreshade-decky
           path: letusreshade-decky.tgz
+  # Commented out until tests are implemented
+  # test:
+  #   runs-on: ubuntu-latest
+  #   needs:
+  #     - build
+  #   steps:
+  #     - uses: actions/checkout@v5
+  #     - uses: actions/download-artifact@v5
+  #       with:
+  #         name: letusreshade-decky
+  #     - run: |
+  #         tar xf letusreshade-decky.tgz
+  #     - uses: actions/setup-node@v4
+  #       with:
+  #         node-version: 24
+  #         cache: pnpm
+  #     - run: pnpm install --frozen-lockfile
+  #     - run: pnpm test

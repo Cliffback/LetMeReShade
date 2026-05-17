@@ -1,6 +1,5 @@
 #!/bin/bash
 
-SEPERATOR="------------------------------------------------------------------------------------------------"
 COMMON_OVERRIDES="d3d8 d3d9 d3d11 ddraw dinput8 dxgi opengl32"
 XDG_DATA_HOME=${XDG_DATA_HOME:-"$HOME/.local/share"}
 MAIN_PATH=${MAIN_PATH:-"$XDG_DATA_HOME/reshade"}
@@ -48,7 +47,7 @@ parse_steam_logs_for_executable() {
         # Example: AppId=501300 -- ... '/path/to/game.exe'
         executable_path=$(grep "AppId=$appid" "$log_file" | grep "\.exe" | tail -1 | sed -n "s/.*'\([^']*\.exe\)'.*/\1/p")
         
-        if [ ! -z "$executable_path" ] && [ -f "$executable_path" ]; then
+        if [ -n "$executable_path" ] && [ -f "$executable_path" ]; then
             log_message "Found executable from direct launch logs: $executable_path"
             echo "$executable_path"
             return 0
@@ -58,15 +57,16 @@ parse_steam_logs_for_executable() {
         # Example: Game process added : AppID 501300 "command with exe path"
         executable_path=$(grep "AppID $appid" "$log_file" | grep "\.exe" | tail -1 | sed -n "s/.*'\([^']*\.exe\)'.*/\1/p")
         
-        if [ ! -z "$executable_path" ] && [ -f "$executable_path" ]; then
+        if [ -n "$executable_path" ] && [ -f "$executable_path" ]; then
             log_message "Found executable from process logs: $executable_path"
             echo "$executable_path"
             return 0
         fi
         
         # Pattern 3: Look for any mention of the app ID with executable paths
-        local app_lines=$(grep "$appid" "$log_file" | grep "\.exe" | tail -5)
-        if [ ! -z "$app_lines" ]; then
+        local app_lines
+        app_lines=$(grep "$appid" "$log_file" | grep "\.exe" | tail -5)
+        if [ -n "$app_lines" ]; then
             log_message "Found App ID mentions with .exe in $log_file:"
             echo "$app_lines" | while read -r line; do
                 log_message "  $line"
@@ -104,8 +104,10 @@ detect_game_arch_and_api_enhanced() {
     local scored_exes=()
     
     for exe in "${exe_files[@]}"; do
-        local filename=$(basename "$exe")
-        local filename_lower=$(echo "$filename" | tr '[:upper:]' '[:lower:]')
+        local filename
+        filename=$(basename "$exe")
+        local filename_lower
+        filename_lower=$(echo "$filename" | tr '[:upper:]' '[:lower:]')
         local file_size=0
         local score=0
         
@@ -133,7 +135,8 @@ detect_game_arch_and_api_enhanced() {
         fi
         
         # Path-based scoring (discovered patterns)
-        local rel_path=$(echo "$exe" | sed "s|$game_path/||")
+        local rel_path
+        rel_path=${exe//"$game_path/"/}
         if [[ "$rel_path" =~ binaries/win64 ]]; then
             score=$((score + 30))  # Unreal Engine pattern
         elif [[ "$rel_path" =~ bin ]]; then
@@ -155,8 +158,9 @@ detect_game_arch_and_api_enhanced() {
         fi
         
         # Penalty for deep nesting (utilities often deeply nested)
-        local path_depth=$(echo "$rel_path" | tr -cd '/' | wc -c)
-        if [ $path_depth -gt 3 ]; then
+        local path_depth
+        path_depth=$(echo "$rel_path" | tr -cd '/' | wc -c)
+        if [ "$path_depth" -gt 3 ]; then
             score=$((score - path_depth * 5))
         fi
         
@@ -174,7 +178,8 @@ detect_game_arch_and_api_enhanced() {
         
         local fallback_exes=()
         for exe in "${exe_files[@]}"; do
-            local filename=$(basename "$exe")
+            local filename
+            filename=$(basename "$exe")
             local file_size=0
             
             if [ -f "$exe" ]; then
@@ -182,7 +187,7 @@ detect_game_arch_and_api_enhanced() {
             fi
             
             # Only include files larger than 100KB to exclude tiny utilities
-            if [ $file_size -gt 102400 ]; then
+            if [ "$file_size" -gt 102400 ]; then
                 fallback_exes+=("$file_size:$exe")
                 log_message "Fallback candidate: $filename (size: $((file_size / 1024))KB)"
             fi
@@ -194,16 +199,18 @@ detect_game_arch_and_api_enhanced() {
             local largest_size=0
             
             for fallback_exe in "${fallback_exes[@]}"; do
-                local size=$(echo "$fallback_exe" | cut -d: -f1)
-                local exe=$(echo "$fallback_exe" | cut -d: -f2-)
+                local size
+                size=$(echo "$fallback_exe" | cut -d: -f1)
+                local exe
+                exe=$(echo "$fallback_exe" | cut -d: -f2-)
                 
-                if [ $size -gt $largest_size ]; then
+                if [ "$size" -gt "$largest_size" ]; then
                     largest_size=$size
                     largest_exe="$exe"
                 fi
             done
             
-            if [ ! -z "$largest_exe" ]; then
+            if [ -n "$largest_exe" ]; then
                 log_message "Fallback detection selected: $largest_exe (size: $((largest_size / 1024))KB)"
                 best_exe="$largest_exe"
                 best_score=1  # Low score to indicate fallback was used
@@ -222,16 +229,18 @@ detect_game_arch_and_api_enhanced() {
     local best_score=0
     
     for scored_exe in "${scored_exes[@]}"; do
-        local score=$(echo "$scored_exe" | cut -d: -f1)
-        local exe=$(echo "$scored_exe" | cut -d: -f2)
+        local score
+        score=$(echo "$scored_exe" | cut -d: -f1)
+        local exe
+        exe=$(echo "$scored_exe" | cut -d: -f2)
         
-        if [ $score -gt $best_score ]; then
+        if [ "$score" -gt "$best_score" ]; then
             best_score=$score
             best_exe="$exe"
         fi
     done
     
-    if [ ! -z "$best_exe" ]; then
+    if [ -n "$best_exe" ]; then
         log_message "Selected best executable: $best_exe (score: $best_score)"
         
         # Check architecture of the selected executable - FIXED VARIABLE SCOPE
@@ -319,10 +328,10 @@ setup_game_reshade() {
     
     # NEW: Try to get exact executable path from Steam logs first (only if appid is provided and not empty)
     local exact_exe_path=""
-    if [ ! -z "$appid" ] && [ "$appid" != "" ] && [ "$appid" != " " ]; then
+    if [ -n "$appid" ] && [ "$appid" != "" ] && [ "$appid" != " " ]; then
         log_message "Attempting Steam logs method with App ID: $appid"
         exact_exe_path=$(parse_steam_logs_for_executable "$appid")
-        if [ ! -z "$exact_exe_path" ] && [ -f "$exact_exe_path" ]; then
+        if [ -n "$exact_exe_path" ] && [ -f "$exact_exe_path" ]; then
             log_message "Steam logs provided exact executable: $exact_exe_path"
             # Update game_path to the directory containing the exact executable
             game_path=$(dirname "$exact_exe_path")
@@ -439,7 +448,8 @@ setup_game_reshade() {
     
     # Only create the file if it doesn't already exist (preserve existing user settings)
     if [ ! -f "$preset_file" ]; then
-        local game_name=$(basename "$(dirname "$game_path")" 2>/dev/null || basename "$game_path")
+        local game_name
+        game_name=$(basename "$(dirname "$game_path")" 2>/dev/null || basename "$game_path")
         cat > "$preset_file" << EOF
 # ReShade Preset Configuration for $game_name
 # This file will be automatically populated when you save presets in ReShade
@@ -474,7 +484,8 @@ EOF
     
     # Create README file for Steam games
     local readme_file="$game_path/ReShade_README.txt"
-    local game_name=$(basename "$(dirname "$game_path")" 2>/dev/null || basename "$game_path")
+    local game_name
+    game_name=$(basename "$(dirname "$game_path")" 2>/dev/null || basename "$game_path")
     
     # Check if AutoHDR was actually installed
     local autohdr_status=""
@@ -499,7 +510,7 @@ Installed with LetMeReShade plugin for Steam
 DLL Override: $dll_override
 Architecture: $arch-bit
 Game Directory: $game_path
-$([ ! -z "$exact_exe_path" ] && echo "Exact Executable: $exact_exe_path")
+$([ -n "$exact_exe_path" ] && echo "Exact Executable: $exact_exe_path")
 
 Press HOME key in-game to open the ReShade overlay.
 
@@ -520,7 +531,7 @@ Files created:
 - ReShade_shaders/: Shader files directory (symlinked)
 $autohdr_status
 
-Detection Method: $([ ! -z "$exact_exe_path" ] && echo "Steam Console Logs" || echo "Enhanced File Analysis / User Selected")
+Detection Method: $([ -n "$exact_exe_path" ] && echo "Steam Console Logs" || echo "Enhanced File Analysis / User Selected")
 
 AutoHDR Compatibility:
 - Compatible APIs: DXGI, D3D11, D3D12 (DirectX 10/11/12)
@@ -750,7 +761,7 @@ main() {
                         ;;
                 esac
                 
-                if [ ! -z "$autohdr_message" ]; then
+                if [ -n "$autohdr_message" ]; then
                     echo "$autohdr_message"
                 fi
                 

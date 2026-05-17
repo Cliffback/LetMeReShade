@@ -7,7 +7,13 @@
     "build": "rollup -c",
     "watch": "rollup -c -w",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "lint": "biome check",
+    "lint": "biome check && shellcheck defaults/assets/*.sh && python3 -m ruff check main.py",
+    "lint:js": "biome check",
+    "lint:js:fix": "biome check --fix",
+    "lint:sh": "shellcheck defaults/assets/*.sh",
+    "lint:py": "python3 -m ruff check main.py",
+    "lint:py:fix": "python3 -m ruff check --fix main.py",
+    "format:py": "python3 -m ruff format main.py",
     "dev-build": "node scripts/create-dev-build.js"
   },
   "repository": {
