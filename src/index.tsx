@@ -104,8 +104,9 @@ function ReShadeInstallerSection() {
   const [preferencesInfo, setPreferencesInfo] = useState<any>(null);
 
   const versionOptions: VersionOption[] = [
-    { label: 'ReShade Latest (6.5.1)', value: 'latest' },
-    { label: 'ReShade Last Version (6.5.1)', value: 'last' },
+    { label: 'ReShade 6.7.3', value: '6.7.3' },
+    { label: 'ReShade 6.6.2', value: '6.6.2' },
+    { label: 'ReShade 6.5.1', value: '6.5.1' },
   ];
 
   useEffect(() => {
@@ -130,7 +131,7 @@ function ReShadeInstallerSection() {
               );
               setSelectedVersion(matchingOption || versionOptions[0]); // Default to latest if not found
             } else {
-              // No version info available, default to latest
+              // No version info available, default to first option
               setSelectedVersion(versionOptions[0]);
             }
           }
@@ -218,7 +219,7 @@ function ReShadeInstallerSection() {
 
     const currentConfig = {
       with_addon: addonEnabled,
-      version: selectedVersion?.value || 'latest',
+      version: selectedVersion?.value || '6.7.3',
       with_autohdr: autoHdrEnabled,
       selected_shaders: [], // We'll need to load current shader preferences
     };
@@ -426,7 +427,7 @@ function ReShadeInstallerSection() {
         }}
         addonEnabled={addonEnabled}
         autoHdrEnabled={autoHdrEnabled}
-        selectedVersion={selectedVersion?.value || 'latest'}
+        selectedVersion={selectedVersion?.value || '6.7.3'}
         mode="manage"
         initialSelectedShaders={currentPreferences}
         closeModal={() => modalResult.Close()}
