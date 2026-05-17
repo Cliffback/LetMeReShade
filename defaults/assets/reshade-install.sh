@@ -12,7 +12,7 @@ UPDATE_RESHADE=${UPDATE_RESHADE:-1}
 MERGE_SHADERS=${MERGE_SHADERS:-1}
 VULKAN_SUPPORT=${VULKAN_SUPPORT:-0}
 GLOBAL_INI=${GLOBAL_INI:-"ReShade.ini"}
-RESHADE_VERSION=${RESHADE_VERSION:-"6.6.0"}
+RESHADE_VERSION=${RESHADE_VERSION:-"6.6.2"}
 RESHADE_ADDON_SUPPORT=${RESHADE_ADDON_SUPPORT:-0}
 AUTOHDR_ENABLED=${AUTOHDR_ENABLED:-0}
 SELECTED_SHADERS=${SELECTED_SHADERS:-"all"}
@@ -353,7 +353,7 @@ setup_reshade() {
     local version_suffix=""
 
     if [[ "$RESHADE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-        # Version number format (e.g., 6.6.0, 6.5.1, 6.4.1)
+        # Version number format (e.g., 6.6.2, 6.5.1, 6.4.1)
         version_suffix="_${RESHADE_VERSION}"
         if [[ $addon_support -eq 1 ]]; then
             installer_name="reshade_${RESHADE_VERSION}_addon.exe"
@@ -362,7 +362,7 @@ setup_reshade() {
             installer_name="reshade_${RESHADE_VERSION}.exe"
         fi
     else
-        log_message "Error: Invalid RESHADE_VERSION format. Use version numbers like 6.6.0, 6.5.1, or 6.4.1"
+        log_message "Error: Invalid RESHADE_VERSION format. Use version numbers like 6.6.2, 6.5.1, or 6.4.1"
         exit 1
     fi
     

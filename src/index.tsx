@@ -219,7 +219,7 @@ function ReShadeInstallerSection() {
 
     const currentConfig = {
       with_addon: addonEnabled,
-      version: selectedVersion?.value || '6.6.0',
+      version: selectedVersion?.value || '6.6.2',
       with_autohdr: autoHdrEnabled,
       selected_shaders: [], // We'll need to load current shader preferences
     };
@@ -427,7 +427,7 @@ function ReShadeInstallerSection() {
         }}
         addonEnabled={addonEnabled}
         autoHdrEnabled={autoHdrEnabled}
-        selectedVersion={selectedVersion?.value || '6.6.0'}
+        selectedVersion={selectedVersion?.value || '6.6.2'}
         mode="manage"
         initialSelectedShaders={currentPreferences}
         closeModal={() => modalResult.Close()}
