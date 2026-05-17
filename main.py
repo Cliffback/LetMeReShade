@@ -21,7 +21,7 @@ class Plugin:
             'DELETE_RESHADE_FILES': '0',
             'FORCE_RESHADE_UPDATE_CHECK': '0',
             'RESHADE_ADDON_SUPPORT': '0',
-            'RESHADE_VERSION': '6.6.2',
+            'RESHADE_VERSION': '6.7.3',
             'AUTOHDR_ENABLED': '0'
         }
         # Main paths for ReShade
@@ -1316,7 +1316,7 @@ class Plugin:
                 if version_file.exists():
                     with open(version_file) as f:
                         version_content = f.read().strip()
-                        # Extract version number (e.g., "6.6.2_Addon" -> "6.6.2")
+                        # Extract version number (e.g., "6.7.3_Addon" -> "6.7.3")
                         version_match = re.search(r'(\d+\.\d+\.\d+)', version_content)
                         if version_match:
                             version_info["version"] = version_match.group(1)
@@ -1330,7 +1330,7 @@ class Plugin:
             "version_info": version_info
         }
 
-    async def run_install_reshade(self, with_addon: bool = False, version: str = "6.6.2", with_autohdr: bool = False, selected_shaders: list | None = None) -> dict:
+    async def run_install_reshade(self, with_addon: bool = False, version: str = "6.7.3", with_autohdr: bool = False, selected_shaders: list | None = None) -> dict:
         try:
             assets_dir = self._get_assets_dir()
             script_path = assets_dir / "reshade-install.sh"
