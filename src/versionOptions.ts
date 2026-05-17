@@ -1,8 +1,4 @@
-import { readFileSync } from 'node:fs';
-
-const packageJson = JSON.parse(
-  readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
-);
+import packageJson from '../package.json';
 
 export interface VersionOption {
   label: string;
@@ -20,25 +16,20 @@ export function getVersionOptions(): VersionOption[] {
   for (const entry of entries) {
     const name: string = entry?.name ?? '';
     // Match 'reshade_X.Y.Z.exe' but NOT 'reshade_X.Y.Z_addon.exe'
-    // - starts with reshade_
-    // - captures version numbers X.Y.Z
-    // - ends with .exe
-    // - ensures no '_addon' before .exe
     const match = name.match(/^reshade_(\d+\.\d+\.\d+)\.exe$/i);
     if (match) {
-      const version = match[1];
-      versionSet.add(version);
+      versionSet.add(match[1]);
     }
   }
 
-  // Turn into sorted version options (descending)
+  // Sort descending by version number
   const versions = Array.from(versionSet).sort((a, b) => {
     const pa = a.split('.').map(Number);
     const pb = b.split('.').map(Number);
     for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
       const da = pa[i] ?? 0;
       const db = pb[i] ?? 0;
-      if (da !== db) return db - da; // descending
+      if (da !== db) return db - da;
     }
     return 0;
   });
@@ -48,7 +39,3 @@ export function getVersionOptions(): VersionOption[] {
     value: v,
   }));
 }
-
-export const versionOptions: VersionOption[] = getVersionOptions();
-
-// console.log(JSON.stringify(versionOptions, null, 2));
