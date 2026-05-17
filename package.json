@@ -63,24 +63,34 @@
   "remote_binary_bundling": false,
   "remote_binary": [
     {
-      "name": "reshade_latest.exe",
-      "url": "https://github.com/itsOwen/LetMeReShade_Binaries/releases/download/ReShade_Version_6.5.1/reshade_latest.exe",
+      "name": "reshade_6.7.3.exe",
+      "url": "https://reshade.me/downloads/ReShade_Setup_6.7.3.exe",
+      "sha256hash": "56791fd065358e899c581ebefe2ad871399b7c7ae83fb85e1154c08a75a44147"
+    },
+    {
+      "name": "reshade_6.7.3_addon.exe",
+      "url": "https://reshade.me/downloads/ReShade_Setup_6.7.3_Addon.exe",
+      "sha256hash": "c78db69bd127e98054bd496fb422655f4a1cc664e28f8d12ce9835b2647bc571"
+    },
+    {
+      "name": "reshade_6.6.2.exe",
+      "url": "https://reshade.me/downloads/ReShade_Setup_6.6.2.exe",
+      "sha256hash": "807e145eab98903b20f1fc743598a74e3a3be7394ab015b7f64231228168f04e"
+    },
+    {
+      "name": "reshade_6.6.2_addon.exe",
+      "url": "https://reshade.me/downloads/ReShade_Setup_6.6.2_Addon.exe",
+      "sha256hash": "208d710e21e15cd871fe37256bf97aad587620b4602c389453b7e099b7ba3217"
+    },
+    {
+      "name": "reshade_6.5.1.exe",
+      "url": "https://reshade.me/downloads/ReShade_Setup_6.5.1.exe",
       "sha256hash": "c384e89427865e119db4daf18c2c225b951a4cd07dbff92b65caf68c2a95ace0"
     },
     {
-      "name": "reshade_latest_addon.exe",
-      "url": "https://github.com/itsOwen/LetMeReShade_Binaries/releases/download/ReShade_Version_6.5.1/reshade_latest_addon.exe",
+      "name": "reshade_6.5.1_addon.exe",
+      "url": "https://reshade.me/downloads/ReShade_Setup_6.5.1_Addon.exe",
       "sha256hash": "3be164186103dcf126af3d75d8efdf850c4ed9f88919505c16a52e6d0ef135a7"
-    },
-    {
-      "name": "reshade_last.exe",
-      "url": "https://github.com/itsOwen/LetMeReShade_Binaries/releases/download/ReShade_Version_6.5.1/reshade_last.exe",
-      "sha256hash": "503a2cef5a3a24400759d9559b36b9100574c09525d8ef1dba7b91b001ff1845"
-    },
-    {
-      "name": "reshade_last_addon.exe",
-      "url": "https://github.com/itsOwen/LetMeReShade_Binaries/releases/download/ReShade_Version_6.5.1/reshade_last_addon.exe",
-      "sha256hash": "9ac89947607ebe01724f4f7a71788023fa458d12beed0435c8362190af1e5a6b"
     },
     {
       "name": "d3dcompiler_47.dll",
