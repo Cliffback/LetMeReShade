@@ -60,14 +60,13 @@ def download_and_hash(url: str) -> str:
     print(f"  Downloading {url} ...")
     req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
     sha = hashlib.sha256()
-    with urllib.request.urlopen(req, timeout=120) as resp:
-        with tempfile.NamedTemporaryFile() as tmp:
-            while True:
-                chunk = resp.read(65536)
-                if not chunk:
-                    break
-                sha.update(chunk)
-                tmp.write(chunk)
+    with urllib.request.urlopen(req, timeout=120) as resp, tempfile.NamedTemporaryFile() as tmp:
+        while True:
+            chunk = resp.read(65536)
+            if not chunk:
+                break
+            sha.update(chunk)
+            tmp.write(chunk)
     digest = sha.hexdigest()
     print(f"  SHA256: {digest}")
     return digest
@@ -154,7 +153,7 @@ def main():
 
     # Determine versions to keep: latest + existing, capped at MAX_VERSIONS
     all_versions = sorted(
-        set([latest] + existing), key=version_key, reverse=True
+        set([latest, *existing]), key=version_key, reverse=True
     )
     versions_to_keep = all_versions[:MAX_VERSIONS]
     print(f"Versions to keep: {versions_to_keep}")
