@@ -61,3 +61,6 @@ builds
 
 # Ignore zips
 *.zip
+
+# AI agent context
+agents.md
