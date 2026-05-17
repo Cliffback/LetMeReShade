@@ -8,14 +8,14 @@ on:
       - main
   workflow_dispatch:
 jobs:
-  shellcheck:
+  lint-bash:
     runs-on: ubuntu-latest
     container: koalaman/shellcheck-alpine:stable
     steps:
       - uses: actions/checkout@v5
       - run: shellcheck defaults/assets/*.sh
 
-  lint:
+  lint-js:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -29,10 +29,17 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint:js
 
+  lint-py:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/ruff-action@v3
+
   build:
     needs:
-      - shellcheck
-      - lint
+      - lint-bash
+      - lint-js
+      - lint-py
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -68,4 +75,3 @@ jobs:
   #         cache: pnpm
   #     - run: pnpm install --frozen-lockfile
   #     - run: pnpm test
-
