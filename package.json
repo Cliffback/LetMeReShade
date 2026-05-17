@@ -52,7 +52,7 @@
     "tslib": "^2.7.0"
   },
   "pnpm": {
-    "minimumReleaseAge": "3 days",
+    "minimumReleaseAge": "72 hours",
     "peerDependencyRules": {
       "ignoreMissing": [
         "react",
