@@ -1,4 +1,5 @@
 pnpm lint:js
 pnpm lint:sh
 pnpm lint:py
+pnpm typecheck
 pnpm build

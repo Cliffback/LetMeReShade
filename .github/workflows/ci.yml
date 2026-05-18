@@ -29,6 +29,20 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint:js
 
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+
   lint-py:
     runs-on: ubuntu-latest
     steps:
@@ -40,6 +54,7 @@ jobs:
       - lint-bash
       - lint-js
       - lint-py
+      - typecheck
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5

@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "rollup -c",
+    "typecheck": "tsc --noEmit",
     "watch": "rollup -c -w",
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "biome check && shellcheck defaults/assets/*.sh && python3 -m ruff check main.py",
