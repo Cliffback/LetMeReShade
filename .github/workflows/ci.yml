@@ -52,12 +52,23 @@ jobs:
         with:
           args: 'format --check'
 
+  test-python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install pytest
+      - run: pytest tests/ -v
+
   build:
     needs:
       - lint-bash
       - lint-js
       - lint-py
       - typecheck
+      - test-python
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
