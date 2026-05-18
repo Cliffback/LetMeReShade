@@ -29,17 +29,46 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint:js
 
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+
   lint-py:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
       - uses: astral-sh/ruff-action@v3
+      - uses: astral-sh/ruff-action@v3
+        with:
+          args: 'format --check'
+
+  test-python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install pytest
+      - run: pytest tests/ -v
 
   build:
     needs:
       - lint-bash
       - lint-js
       - lint-py
+      - typecheck
+      - test-python
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -51,27 +80,25 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - run: pnpm audit --prod
+        continue-on-error: true
       - run: pnpm build
       - run: tar czf letusreshade-decky.tgz dist
       - uses: actions/upload-artifact@v4
         with:
           name: letusreshade-decky
           path: letusreshade-decky.tgz
-  # Commented out until tests are implemented
-  # test:
-  #   runs-on: ubuntu-latest
-  #   needs:
-  #     - build
-  #   steps:
-  #     - uses: actions/checkout@v5
-  #     - uses: actions/download-artifact@v5
-  #       with:
-  #         name: letusreshade-decky
-  #     - run: |
-  #         tar xf letusreshade-decky.tgz
-  #     - uses: actions/setup-node@v4
-  #       with:
-  #         node-version: 24
-  #         cache: pnpm
-  #     - run: pnpm install --frozen-lockfile
-  #     - run: pnpm test
+
+  test-js:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test

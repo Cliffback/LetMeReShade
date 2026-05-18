@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { execSync } from 'child_process';
+import { execSync } from 'node:child_process';
 import {
   cpSync,
   existsSync,
@@ -8,9 +8,9 @@ import {
   readFileSync,
   rmSync,
   writeFileSync,
-} from 'fs';
-import { dirname, join } from 'path';
-import { fileURLToPath } from 'url';
+} from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -60,7 +60,7 @@ if (packageJson.scripts?.lint) {
   log.info('Running lint...');
   try {
     execSync('pnpm run lint', { stdio: 'inherit' });
-  } catch (error) {
+  } catch (_error) {
     log.error('Linting failed');
     process.exit(1);
   }
@@ -80,7 +80,7 @@ if (
     log.info('Running prettier...');
     try {
       execSync('pnpm run format', { stdio: 'inherit' });
-    } catch (error) {
+    } catch (_error) {
       log.error('Formatting failed');
       process.exit(1);
     }
@@ -95,7 +95,7 @@ if (testScript && !testScript.includes('no test specified')) {
   log.info('Running tests...');
   try {
     execSync('pnpm run test', { stdio: 'inherit' });
-  } catch (error) {
+  } catch (_error) {
     log.error('Tests failed');
     process.exit(1);
   }
@@ -107,7 +107,7 @@ if (testScript && !testScript.includes('no test specified')) {
 log.info('Installing dependencies...');
 try {
   execSync('pnpm install', { stdio: 'inherit' });
-} catch (error) {
+} catch (_error) {
   log.error('Failed to install dependencies');
   process.exit(1);
 }
@@ -116,7 +116,7 @@ try {
 log.info('Building plugin...');
 try {
   execSync('pnpm run build', { stdio: 'inherit' });
-} catch (error) {
+} catch (_error) {
   log.error('Build failed');
   process.exit(1);
 }
@@ -159,7 +159,7 @@ const originalPackageJson = readFileSync(packageJsonPath, 'utf8');
 const updatedPackageJson = { ...packageJson, version };
 writeFileSync(
   packageJsonPath,
-  JSON.stringify(updatedPackageJson, null, 2) + '\n',
+  `${JSON.stringify(updatedPackageJson, null, 2)}\n`,
 );
 
 log.info('Creating release package...');
@@ -197,7 +197,7 @@ writeFileSync(packageJsonPath, originalPackageJson);
 log.info(`Creating zip file: ${zipName}`);
 try {
   execSync(`zip -r "${zipName}" "${releaseDir}"`, { stdio: 'inherit' });
-} catch (error) {
+} catch (_error) {
   log.error('Failed to create zip file');
   process.exit(1);
 }
