@@ -115,7 +115,7 @@ function ReShadeInstallerSection() {
           setAddonEnabled(result.is_addon);
           // Set version dropdown to match currently installed version
           if (!selectedVersion) {
-            if (result.version_info && result.version_info.version) {
+            if (result.version_info?.version) {
               // Find the matching version option based on installed version
               const installedVersion = result.version_info.version;
               const matchingOption = versionOptions.find(
