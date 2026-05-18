@@ -1,5 +1,8 @@
 pnpm lint:js
 pnpm lint:sh
 pnpm lint:py
+python3 -m ruff format --check main.py tests/
 pnpm typecheck
+python3 -m pytest tests/ -q
+pnpm test
 pnpm build

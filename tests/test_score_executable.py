@@ -1,9 +1,6 @@
 """Tests for executable scoring functions in main.py."""
 
-import pytest
-
 from main import score_heroic_executable, score_steam_executable
-
 
 # --- Helpers ---
 
@@ -55,7 +52,9 @@ class TestScoreSteamExecutable:
         assert score_normal > score_launcher
 
     def test_unreal_engine_patterns_boost(self):
-        exe = make_exe('MyGame-Win64-Shipping.exe', 'Binaries/Win64/MyGame-Win64-Shipping.exe', size_mb=80.0)
+        exe = make_exe(
+            'MyGame-Win64-Shipping.exe', 'Binaries/Win64/MyGame-Win64-Shipping.exe', size_mb=80.0
+        )
         score = score_steam_executable(exe, 'MyGame')
         # Should get path bonus + shipping bonus + size bonus + name match
         assert score > 80
