@@ -48,6 +48,9 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - uses: astral-sh/ruff-action@v3
+      - uses: astral-sh/ruff-action@v3
+        with:
+          args: 'format --check'
 
   build:
     needs:
