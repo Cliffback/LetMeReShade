@@ -1,0 +1,173 @@
+name: Decky Store Update
+
+on:
+  workflow_run:
+    workflows: ["Release Please"]
+    types:
+      - completed
+
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: "Release tag (e.g. v1.9.0)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+env:
+  PLUGIN_NAME: LetMeReShade
+  UPSTREAM_REPO: SteamDeckHomebrew/decky-plugin-database
+  SOURCE_REPO: Cliffback/LetMeReShade
+
+jobs:
+  open-store-pr:
+    runs-on: ubuntu-latest
+    # For workflow_run: only run if the release workflow succeeded and actually
+    # created a release (we check for a new tag in the steps below).
+    # For workflow_dispatch: always run.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+    steps:
+      - name: Determine release tag
+        id: tag
+        env:
+          GH_TOKEN: ${{ secrets.DECKY_STORE_PAT }}
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            TAG="${{ inputs.tag_name }}"
+          else
+            # Get the latest release tag from our repo
+            TAG=$(gh release view --repo "${{ env.SOURCE_REPO }}" --json tagName -q '.tagName')
+          fi
+
+          if [[ -z "$TAG" ]]; then
+            echo "::error::Could not determine release tag"
+            exit 1
+          fi
+
+          VERSION="${TAG#v}"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Resolved tag: $TAG (version: $VERSION)"
+
+      - name: Fork and clone database repo
+        env:
+          GH_TOKEN: ${{ secrets.DECKY_STORE_PAT }}
+        run: |
+          # Fork if not already forked (this is idempotent)
+          gh repo fork "${{ env.UPSTREAM_REPO }}" --clone=false 2>/dev/null || true
+
+          # Wait briefly for fork to be ready
+          sleep 5
+
+          # Determine the fork owner from the PAT
+          FORK_OWNER=$(gh api user -q '.login')
+          FORK_REPO="${FORK_OWNER}/decky-plugin-database"
+          echo "FORK_OWNER=$FORK_OWNER" >> "$GITHUB_ENV"
+          echo "FORK_REPO=$FORK_REPO" >> "$GITHUB_ENV"
+
+          # Clone the fork
+          gh repo clone "$FORK_REPO" decky-plugin-database -- --recurse-submodules
+
+      - name: Sync fork with upstream
+        env:
+          GH_TOKEN: ${{ secrets.DECKY_STORE_PAT }}
+        run: |
+          gh repo sync "${{ env.FORK_REPO }}" \
+            --source "${{ env.UPSTREAM_REPO }}" \
+            --branch main
+
+      - name: Update submodule to release tag
+        working-directory: decky-plugin-database
+        run: |
+          TAG="${{ steps.tag.outputs.tag }}"
+          BRANCH="update/${{ env.PLUGIN_NAME }}-${TAG}"
+
+          # Configure git
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Pull latest main after sync
+          git pull origin main
+
+          # Create update branch
+          git checkout -b "$BRANCH"
+
+          # Update the submodule to the release tag
+          cd "plugins/${{ env.PLUGIN_NAME }}"
+          git fetch origin
+          git checkout "$TAG"
+          cd ../..
+
+          # Commit
+          git add "plugins/${{ env.PLUGIN_NAME }}"
+          git commit -m "Update ${{ env.PLUGIN_NAME }} to ${TAG}"
+
+          # Push to fork
+          git push origin "$BRANCH"
+
+          echo "BRANCH=$BRANCH" >> "$GITHUB_ENV"
+
+      - name: Open draft PR on upstream
+        env:
+          GH_TOKEN: ${{ secrets.DECKY_STORE_PAT }}
+        run: |
+          TAG="${{ steps.tag.outputs.tag }}"
+          VERSION="${{ steps.tag.outputs.version }}"
+          RELEASE_URL="https://github.com/${{ env.SOURCE_REPO }}/releases/tag/${TAG}"
+
+          PR_BODY=$(cat <<'TEMPLATE_EOF'
+          # Update LetMeReShade to VERSION_PLACEHOLDER
+
+          <!-- Automated PR opened by CI. Review and complete the checklist below before marking as ready. -->
+
+          Updated to [VERSION_PLACEHOLDER](RELEASE_URL_PLACEHOLDER). See the release notes for a full changelog.
+
+          ## Task Checklist
+
+          ### Developer
+
+          - [ ] I am the original author or an authorized maintainer of this plugin.
+          - [ ] I have abided by the licenses of the libraries I am utilizing, including attaching license notices where appropriate.
+          - [ ] Generative AI was NOT used to write a majority of the code I am submitting.
+
+          ### Plugin
+
+          - [ ] I have verified that my plugin works properly on the Stable and Beta update channels of SteamOS.
+          - [ ] I have verified my plugin is unique or provides more/alternative functionality to a plugin already on the store.
+
+          ### Backend
+
+          - **No**: I am using a custom backend other than Python.
+          - **Yes**: I am using a tool or software from a 3rd party FOSS project that does not have it's dependencies [statically linked](https://en.wikipedia.org/wiki/Static_library).
+          - **No**: I am using a custom binary that has all of it's dependencies statically linked.
+
+          ### Community
+
+          - [ ] I have tested and left feedback on two other [pull requests][pulls] for new or updating plugins.
+          - [ ] I have commented links to my testing report in this PR.
+
+          ## Testing
+
+          - [ ] Tested by a third party on SteamOS Stable or Beta update channel.
+
+          [pulls]: https://github.com/steamdeckHomebrew/decky-plugin-database/pulls?q=is%3Apr+is%3Aopen+sort%3Acreated-desc+-status%3Afailure+-draft%3Atrue+-author%3A%40me
+          TEMPLATE_EOF
+          )
+
+          # Replace placeholders
+          PR_BODY="${PR_BODY//VERSION_PLACEHOLDER/$VERSION}"
+          PR_BODY="${PR_BODY//RELEASE_URL_PLACEHOLDER/$RELEASE_URL}"
+
+          gh pr create \
+            --repo "${{ env.UPSTREAM_REPO }}" \
+            --head "${FORK_OWNER}:${BRANCH}" \
+            --base main \
+            --title "Update ${{ env.PLUGIN_NAME }} to ${TAG}" \
+            --body "$PR_BODY" \
+            --draft
+
+          echo "Draft PR created. Complete the checklist and get third-party testing before marking as ready for review."
