@@ -1,0 +1,40 @@
+name: Update ReShade Versions
+
+on:
+  schedule:
+    # Every Monday at 09:00 UTC
+    - cron: "0 9 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  check-and-update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Check for new ReShade version
+        id: update
+        run: |
+          python3 .github/scripts/update-reshade-versions.py
+          echo "updated=true" >> "$GITHUB_OUTPUT"
+        continue-on-error: true
+
+      - name: Create Pull Request
+        if: steps.update.outcome == 'success'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore: update ReShade versions"
+          title: "chore: update ReShade versions"
+          body: |
+            Automated update from [reshade.me](https://reshade.me).
+
+            This PR was created by the `update-reshade` workflow.
+            Review the updated `package.json` entries and verify the sha256 hashes are correct.
+          branch: chore/auto-reshade-update
+          delete-branch: true
+          labels: automated,dependencies
