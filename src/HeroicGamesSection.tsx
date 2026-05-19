@@ -563,7 +563,7 @@ const HeroicGamesSection = () => {
   };
 
   return (
-    <PanelSection title="Heroic Games ReShade">
+    <PanelSection title="Heroic Games">
       {loading ? (
         <PanelSectionRow>
           <div>Loading Heroic games...</div>

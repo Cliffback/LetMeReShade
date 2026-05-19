@@ -474,7 +474,7 @@ const NonSteamGamesSection = () => {
   };
 
   return (
-    <PanelSection title="Non-Steam Games ReShade">
+    <PanelSection title="Non-Steam Games">
       {loading ? (
         <PanelSectionRow>
           <div>Loading non-Steam games...</div>
