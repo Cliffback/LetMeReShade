@@ -71,6 +71,7 @@ Contributions and feedback are very welcome!
 
 2. **🎛️ In-Game Access**
    - Launch game → Press **HOME** key for overlay
+   > 💡 **Tip:** On compact or laptop keyboards, the Home key is often `Fn + Left Arrow`. If your keyboard lacks a Home key entirely, you can change the overlay key in `ReShade.ini` under `[INPUT]` → `KeyOverlay` (see [Virtual Key Codes](https://learn.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes)).
 
 ### 🎨 Shader Management
 
