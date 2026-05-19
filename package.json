@@ -16,6 +16,7 @@
     "lint:py:fix": "python3 -m ruff check --fix main.py",
     "format:py": "python3 -m ruff format main.py",
     "dev-build": "node scripts/create-dev-build.js",
+    "dev-test": "bash scripts/dev-test.sh",
     "prepare": "husky"
   },
   "repository": {
