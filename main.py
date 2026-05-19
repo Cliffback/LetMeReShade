@@ -1832,6 +1832,10 @@ class Plugin:
                     exe = exe.strip('"')
                     start_dir = start_dir.strip('"')
 
+                    # Skip non-exe shortcuts (scripts, flatpaks, emulators, launchers)
+                    if not exe.lower().endswith('.exe'):
+                        continue
+
                     games.append(
                         {
                             'name': app_name,
@@ -1856,7 +1860,6 @@ class Plugin:
         """Find executable paths for a non-Steam game shortcut.
 
         If the shortcut's exe points to a .exe file, scan its directory for alternatives.
-        If it points to a script/flatpak command, try start_dir instead.
         """
         try:
             decky.logger.info(
@@ -1873,19 +1876,16 @@ class Plugin:
 
             # Determine the search directory
             search_dir = None
-            shortcut_is_exe = exe_path.lower().endswith('.exe')
 
-            if shortcut_is_exe and os.path.exists(exe_path):
+            if os.path.exists(exe_path):
                 # The shortcut directly points to a .exe - use its directory
                 search_dir = os.path.dirname(exe_path)
             elif start_dir and os.path.isdir(start_dir):
                 search_dir = start_dir
-            elif os.path.isdir(os.path.dirname(exe_path)):
-                search_dir = os.path.dirname(exe_path)
 
             if not search_dir or not os.path.isdir(search_dir):
                 # Can't find a valid directory to scan
-                if shortcut_is_exe and os.path.exists(exe_path):
+                if os.path.exists(exe_path):
                     # At least we have the exe itself
                     result = {
                         'status': 'success',
@@ -1908,7 +1908,6 @@ class Plugin:
                             ],
                             'confidence': 'high',
                         },
-                        'is_script_shortcut': False,
                         'recommended_method': 'shortcut_exe',
                         'timestamp': time.time(),
                     }
@@ -1919,7 +1918,6 @@ class Plugin:
                     'status': 'error',
                     'method': 'non_steam_detection',
                     'message': f'Could not find a valid game directory to scan. Exe: {exe_path}, StartDir: {start_dir}',
-                    'is_script_shortcut': not shortcut_is_exe,
                 }
 
             # Walk the directory tree and find all .exe files
@@ -1951,7 +1949,6 @@ class Plugin:
                     'status': 'error',
                     'method': 'non_steam_detection',
                     'message': f'No .exe files found in {search_dir}',
-                    'is_script_shortcut': not shortcut_is_exe,
                 }
 
             decky.logger.info(f'Found {len(all_executables)} executables')
@@ -1962,9 +1959,7 @@ class Plugin:
                 score = score_heroic_executable(exe_info, game_name, search_dir, decky.logger)
 
                 # Bonus if this exe matches the shortcut's exe path
-                if shortcut_is_exe and os.path.normpath(exe_info['path']) == os.path.normpath(
-                    exe_path
-                ):
+                if os.path.normpath(exe_info['path']) == os.path.normpath(exe_path):
                     score += 50
                     decky.logger.info(
                         f'Bonus +50 for matching shortcut exe: {exe_info["filename"]}'
@@ -1977,9 +1972,7 @@ class Plugin:
                 # Fallback: include all with any score
                 for exe_info in all_executables:
                     score = score_heroic_executable(exe_info, game_name, search_dir, decky.logger)
-                    if shortcut_is_exe and os.path.normpath(exe_info['path']) == os.path.normpath(
-                        exe_path
-                    ):
+                    if os.path.normpath(exe_info['path']) == os.path.normpath(exe_path):
                         score += 50
                     scored_executables.append({**exe_info, 'score': score})
 
@@ -2004,7 +1997,6 @@ class Plugin:
                     'all_executables': top_executables,
                     'confidence': 'high' if best_executable['score'] > 70 else 'medium',
                 },
-                'is_script_shortcut': not shortcut_is_exe,
                 'recommended_method': 'non_steam_detection',
                 'timestamp': time.time(),
             }

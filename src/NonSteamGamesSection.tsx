@@ -58,7 +58,6 @@ interface DetectionResult {
 interface NonSteamExecutableDetectionResponse {
   status: string;
   non_steam_detection_result?: DetectionResult;
-  is_script_shortcut?: boolean;
   recommended_method?: string;
   message?: string;
 }
@@ -470,24 +469,6 @@ const NonSteamGamesSection = () => {
               </PanelSectionRow>
             );
           })()}
-
-        {executableDetection.is_script_shortcut && (
-          <PanelSectionRow>
-            <div
-              style={{
-                padding: '8px',
-                backgroundColor: 'rgba(255, 152, 0, 0.1)',
-                borderRadius: '4px',
-                border: '1px solid rgba(255, 152, 0, 0.3)',
-                fontSize: '0.85em',
-              }}
-            >
-              This shortcut points to a script or launcher, not a .exe file
-              directly. The detected executables above are from the start
-              directory. Please verify the correct executable is selected.
-            </div>
-          </PanelSectionRow>
-        )}
       </>
     );
   };
