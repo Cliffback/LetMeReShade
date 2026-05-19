@@ -13,6 +13,7 @@ import { IoMdColorPalette } from 'react-icons/io';
 import HeroicGamesSection from './HeroicGamesSection';
 import ShaderSelectionModal from './ShaderSelectionModal';
 import SteamGamesSection from './SteamGamesSection';
+import { getVersionOptions, VersionOption } from './versionOptions';
 
 interface InstallResult {
   status: string;
@@ -27,11 +28,6 @@ interface PathCheckResponse {
     version: string;
     addon: boolean;
   };
-}
-
-interface VersionOption {
-  label: string;
-  value: string;
 }
 
 interface DeckModelResponse {
@@ -103,10 +99,7 @@ function ReShadeInstallerSection() {
   const [hasPreferences, setHasPreferences] = useState<boolean>(false);
   const [preferencesInfo, setPreferencesInfo] = useState<any>(null);
 
-  const versionOptions: VersionOption[] = [
-    { label: 'ReShade Latest (6.5.1)', value: 'latest' },
-    { label: 'ReShade Last Version (6.5.1)', value: 'last' },
-  ];
+  const versionOptions = getVersionOptions();
 
   useEffect(() => {
     const checkPath = async () => {
@@ -122,7 +115,7 @@ function ReShadeInstallerSection() {
           setAddonEnabled(result.is_addon);
           // Set version dropdown to match currently installed version
           if (!selectedVersion) {
-            if (result.version_info && result.version_info.version) {
+            if (result.version_info?.version) {
               // Find the matching version option based on installed version
               const installedVersion = result.version_info.version;
               const matchingOption = versionOptions.find(
@@ -130,7 +123,7 @@ function ReShadeInstallerSection() {
               );
               setSelectedVersion(matchingOption || versionOptions[0]); // Default to latest if not found
             } else {
-              // No version info available, default to latest
+              // No version info available, default to first option
               setSelectedVersion(versionOptions[0]);
             }
           }
@@ -218,7 +211,7 @@ function ReShadeInstallerSection() {
 
     const currentConfig = {
       with_addon: addonEnabled,
-      version: selectedVersion?.value || 'latest',
+      version: selectedVersion?.value || '6.7.3',
       with_autohdr: autoHdrEnabled,
       selected_shaders: [], // We'll need to load current shader preferences
     };
@@ -426,7 +419,7 @@ function ReShadeInstallerSection() {
         }}
         addonEnabled={addonEnabled}
         autoHdrEnabled={autoHdrEnabled}
-        selectedVersion={selectedVersion?.value || 'latest'}
+        selectedVersion={selectedVersion?.value || '6.7.3'}
         mode="manage"
         initialSelectedShaders={currentPreferences}
         closeModal={() => modalResult.Close()}

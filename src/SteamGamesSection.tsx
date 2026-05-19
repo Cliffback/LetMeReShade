@@ -337,7 +337,7 @@ const SteamGamesSection = () => {
                   const detectedApi =
                     launchOptions.match(/;(\w+)=n,b/)?.pop() || 'dxgi';
                   await SteamClient.Apps.SetAppLaunchOptions(
-                    parseInt(selectedGame.appid),
+                    parseInt(selectedGame.appid, 10),
                     launchOptions,
                   );
 
@@ -352,7 +352,7 @@ const SteamGamesSection = () => {
                 } else {
                   // Fallback if we can't extract from output
                   await SteamClient.Apps.SetAppLaunchOptions(
-                    parseInt(selectedGame.appid),
+                    parseInt(selectedGame.appid, 10),
                     `WINEDLLOVERRIDES="d3dcompiler_47=n;${dllValue}=n,b" %command%`,
                   );
                   setResult(
@@ -362,7 +362,7 @@ const SteamGamesSection = () => {
               } else {
                 // Manual DLL selection
                 await SteamClient.Apps.SetAppLaunchOptions(
-                  parseInt(selectedGame.appid),
+                  parseInt(selectedGame.appid, 10),
                   `WINEDLLOVERRIDES="d3dcompiler_47=n;${dllValue}=n,b" %command%`,
                 );
                 setResult(
@@ -416,7 +416,7 @@ const SteamGamesSection = () => {
 
             if (response.status === 'success') {
               await SteamClient.Apps.SetAppLaunchOptions(
-                parseInt(selectedGame.appid),
+                parseInt(selectedGame.appid, 10),
                 '',
               );
               setResult(
