@@ -1718,6 +1718,320 @@ class Plugin:
             decky.logger.error(str(e))
             return {'status': 'error', 'message': str(e)}
 
+    def _parse_shortcuts_vdf(self, filepath: str) -> list:
+        """Parse Steam's binary shortcuts.vdf file and return a list of shortcut entries.
+
+        Binary VDF format:
+        - 0x00 = nested object start (key is null-terminated string)
+        - 0x01 = string value (key and value are null-terminated)
+        - 0x02 = int32 value (key is null-terminated, value is 4 bytes LE)
+        - 0x08 = end of object
+        """
+        entries = []
+        try:
+            with open(filepath, 'rb') as f:
+                data = f.read()
+
+            pos = 0
+            size = len(data)
+
+            def read_string(p):
+                end = data.index(b'\x00', p)
+                return data[p:end].decode('utf-8', errors='replace'), end + 1
+
+            def parse_object(p):
+                obj = {}
+                while p < size:
+                    type_byte = data[p]
+                    p += 1
+
+                    if type_byte == 0x08:  # End of object
+                        break
+
+                    # Read key name
+                    key, p = read_string(p)
+
+                    if type_byte == 0x00:  # Nested object
+                        value, p = parse_object(p)
+                        obj[key] = value
+                    elif type_byte == 0x01:  # String value
+                        value, p = read_string(p)
+                        obj[key] = value
+                    elif type_byte == 0x02:  # Int32 value
+                        value = int.from_bytes(data[p : p + 4], byteorder='little', signed=True)
+                        p += 4
+                        obj[key] = value
+                    else:
+                        # Unknown type, skip
+                        break
+
+                return obj, p
+
+            # Skip root object header: 0x00 + "shortcuts" + 0x00
+            if data[pos] == 0x00:
+                pos += 1
+                _, pos = read_string(pos)
+
+            # Parse each shortcut entry
+            while pos < size:
+                type_byte = data[pos]
+                if type_byte == 0x08:  # End of root object
+                    break
+                if type_byte == 0x00:
+                    pos += 1
+                    _, pos = read_string(pos)  # Skip entry index key (e.g. "0", "1")
+                    entry, pos = parse_object(pos)
+                    entries.append(entry)
+                else:
+                    break
+
+        except Exception as e:
+            decky.logger.error(f'Error parsing shortcuts.vdf at {filepath}: {e!s}')
+
+        return entries
+
+    async def list_non_steam_games(self) -> dict:
+        """List non-Steam game shortcuts added via 'Add a Non-Steam Game' in Steam."""
+        try:
+            steam_root = Path(decky.HOME) / '.steam' / 'steam'
+            userdata_path = steam_root / 'userdata'
+
+            if not userdata_path.exists():
+                return {'status': 'error', 'message': 'Steam userdata directory not found'}
+
+            games = []
+            seen_ids = set()
+
+            # Iterate all user profiles
+            for user_dir in userdata_path.iterdir():
+                if not user_dir.is_dir():
+                    continue
+
+                shortcuts_file = user_dir / 'config' / 'shortcuts.vdf'
+                if not shortcuts_file.exists():
+                    continue
+
+                entries = self._parse_shortcuts_vdf(str(shortcuts_file))
+                for entry in entries:
+                    app_name = entry.get('appname', entry.get('AppName', ''))
+                    exe = entry.get('exe', entry.get('Exe', ''))
+                    start_dir = entry.get('StartDir', '')
+                    app_id = entry.get('appid', entry.get('AppId', 0))
+
+                    if not app_name or not exe:
+                        continue
+
+                    # Convert signed appid to unsigned for deduplication
+                    unsigned_id = app_id & 0xFFFFFFFF if isinstance(app_id, int) else app_id
+
+                    if unsigned_id in seen_ids:
+                        continue
+                    seen_ids.add(unsigned_id)
+
+                    # Strip surrounding quotes from exe and start_dir
+                    exe = exe.strip('"')
+                    start_dir = start_dir.strip('"')
+
+                    games.append(
+                        {
+                            'name': app_name,
+                            'exe': exe,
+                            'start_dir': start_dir,
+                            'appid': str(unsigned_id),
+                        }
+                    )
+
+            # Sort alphabetically
+            games.sort(key=lambda g: g['name'].lower())
+
+            return {'status': 'success', 'games': games}
+
+        except Exception as e:
+            decky.logger.error(f'Error listing non-Steam games: {e!s}')
+            return {'status': 'error', 'message': str(e)}
+
+    async def find_non_steam_game_executable_path(
+        self, exe_path: str, start_dir: str, game_name: str
+    ) -> dict:
+        """Find executable paths for a non-Steam game shortcut.
+
+        If the shortcut's exe points to a .exe file, scan its directory for alternatives.
+        If it points to a script/flatpak command, try start_dir instead.
+        """
+        try:
+            decky.logger.info(
+                f'Finding executable for non-Steam game: {game_name} (exe={exe_path}, start_dir={start_dir})'
+            )
+
+            # Check cache first
+            cache_key = f'nonsteam_{exe_path}_{game_name}'
+            if cache_key in self.executable_cache:
+                cached_result = self.executable_cache[cache_key]
+                if time.time() - cached_result.get('timestamp', 0) < 3600:
+                    decky.logger.info(f'Using cached result for {game_name}')
+                    return cached_result
+
+            # Determine the search directory
+            search_dir = None
+            shortcut_is_exe = exe_path.lower().endswith('.exe')
+
+            if shortcut_is_exe and os.path.exists(exe_path):
+                # The shortcut directly points to a .exe - use its directory
+                search_dir = os.path.dirname(exe_path)
+            elif start_dir and os.path.isdir(start_dir):
+                search_dir = start_dir
+            elif os.path.isdir(os.path.dirname(exe_path)):
+                search_dir = os.path.dirname(exe_path)
+
+            if not search_dir or not os.path.isdir(search_dir):
+                # Can't find a valid directory to scan
+                if shortcut_is_exe and os.path.exists(exe_path):
+                    # At least we have the exe itself
+                    result = {
+                        'status': 'success',
+                        'non_steam_detection_result': {
+                            'status': 'success',
+                            'method': 'shortcut_exe',
+                            'executable_path': exe_path,
+                            'directory_path': os.path.dirname(exe_path),
+                            'filename': os.path.basename(exe_path),
+                            'all_executables': [
+                                {
+                                    'path': exe_path,
+                                    'directory_path': os.path.dirname(exe_path),
+                                    'filename': os.path.basename(exe_path),
+                                    'relative_path': os.path.basename(exe_path),
+                                    'size': os.path.getsize(exe_path),
+                                    'size_mb': round(os.path.getsize(exe_path) / (1024 * 1024), 1),
+                                    'score': 100,
+                                }
+                            ],
+                            'confidence': 'high',
+                        },
+                        'is_script_shortcut': False,
+                        'recommended_method': 'shortcut_exe',
+                        'timestamp': time.time(),
+                    }
+                    self.executable_cache[cache_key] = result
+                    return result
+
+                return {
+                    'status': 'error',
+                    'method': 'non_steam_detection',
+                    'message': f'Could not find a valid game directory to scan. Exe: {exe_path}, StartDir: {start_dir}',
+                    'is_script_shortcut': not shortcut_is_exe,
+                }
+
+            # Walk the directory tree and find all .exe files
+            all_executables = []
+            decky.logger.info(f'Scanning directory: {search_dir}')
+
+            for root, _dirs, files in os.walk(search_dir):
+                for file in files:
+                    if file.lower().endswith('.exe'):
+                        full_path = os.path.join(root, file)
+                        try:
+                            file_size = os.path.getsize(full_path)
+                            rel_path = os.path.relpath(full_path, search_dir)
+                            all_executables.append(
+                                {
+                                    'path': full_path,
+                                    'directory_path': os.path.dirname(full_path),
+                                    'relative_path': rel_path,
+                                    'filename': file,
+                                    'size': file_size,
+                                    'size_mb': round(file_size / (1024 * 1024), 1),
+                                }
+                            )
+                        except Exception as e:
+                            decky.logger.warning(f'Error getting size for {full_path}: {e!s}')
+
+            if not all_executables:
+                return {
+                    'status': 'error',
+                    'method': 'non_steam_detection',
+                    'message': f'No .exe files found in {search_dir}',
+                    'is_script_shortcut': not shortcut_is_exe,
+                }
+
+            decky.logger.info(f'Found {len(all_executables)} executables')
+
+            # Score executables using the Heroic scorer (it's more generic than Steam's)
+            scored_executables = []
+            for exe_info in all_executables:
+                score = score_heroic_executable(exe_info, game_name, search_dir, decky.logger)
+
+                # Bonus if this exe matches the shortcut's exe path
+                if shortcut_is_exe and os.path.normpath(exe_info['path']) == os.path.normpath(
+                    exe_path
+                ):
+                    score += 50
+                    decky.logger.info(
+                        f'Bonus +50 for matching shortcut exe: {exe_info["filename"]}'
+                    )
+
+                if score > 0:
+                    scored_executables.append({**exe_info, 'score': score})
+
+            if not scored_executables:
+                # Fallback: include all with any score
+                for exe_info in all_executables:
+                    score = score_heroic_executable(exe_info, game_name, search_dir, decky.logger)
+                    if shortcut_is_exe and os.path.normpath(exe_info['path']) == os.path.normpath(
+                        exe_path
+                    ):
+                        score += 50
+                    scored_executables.append({**exe_info, 'score': score})
+
+            scored_executables.sort(key=lambda x: x['score'], reverse=True)
+            top_executables = scored_executables[:5]
+            best_executable = top_executables[0]
+
+            decky.logger.info(f'Top executables for {game_name}:')
+            for i, exe in enumerate(top_executables):
+                decky.logger.info(
+                    f'  {i + 1}. {exe["filename"]} (score: {exe["score"]}) at {exe["relative_path"]}'
+                )
+
+            result = {
+                'status': 'success',
+                'non_steam_detection_result': {
+                    'status': 'success',
+                    'method': 'non_steam_detection',
+                    'executable_path': best_executable['path'],
+                    'directory_path': best_executable['directory_path'],
+                    'filename': best_executable['filename'],
+                    'all_executables': top_executables,
+                    'confidence': 'high' if best_executable['score'] > 70 else 'medium',
+                },
+                'is_script_shortcut': not shortcut_is_exe,
+                'recommended_method': 'non_steam_detection',
+                'timestamp': time.time(),
+            }
+
+            self.executable_cache[cache_key] = result
+            return result
+
+        except Exception as e:
+            decky.logger.error(f'Non-Steam executable detection error: {e!s}')
+            return {'status': 'error', 'method': 'non_steam_detection', 'message': str(e)}
+
+    async def install_reshade_for_non_steam_game(
+        self, game_path: str, dll_override: str = 'dxgi', selected_executable_path: str = ''
+    ) -> dict:
+        """Install ReShade for a non-Steam game. Delegates to the Heroic installer since the logic is identical."""
+        decky.logger.info(
+            f'Installing ReShade for non-Steam game at: {game_path} (exe: {selected_executable_path})'
+        )
+        return await self.install_reshade_for_heroic_game(
+            game_path, dll_override, selected_executable_path
+        )
+
+    async def uninstall_reshade_for_non_steam_game(self, game_path: str) -> dict:
+        """Uninstall ReShade from a non-Steam game. Delegates to the Heroic uninstaller."""
+        decky.logger.info(f'Uninstalling ReShade from non-Steam game at: {game_path}')
+        return await self.uninstall_reshade_for_heroic_game(game_path)
+
     async def find_heroic_games(self) -> dict:
         """Find games installed through Heroic Launcher using the config file"""
         try:
