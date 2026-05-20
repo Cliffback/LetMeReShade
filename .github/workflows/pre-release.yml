@@ -1,0 +1,206 @@
+name: Pre-release
+
+on:
+  pull_request:
+    types: [labeled]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  check:
+    if: >-
+      github.event.label.name == 'pre-release' &&
+      startsWith(github.event.pull_request.head.ref, 'release-please--')
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.rc.outputs.tag }}
+      skip: ${{ steps.rc.outputs.skip }}
+      latest_rc: ${{ steps.rc.outputs.latest_rc }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Extract version from PR title
+        id: version
+        run: |
+          TITLE="${{ github.event.pull_request.title }}"
+          # Extract version from "chore(main): release X.Y.Z"
+          VERSION=$(echo "$TITLE" | grep -oP '\d+\.\d+\.\d+')
+          if [ -z "$VERSION" ]; then
+            echo "::error::Could not extract version from PR title: $TITLE"
+            exit 1
+          fi
+          echo "base_version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Determine RC number and check for duplicates
+        id: rc
+        run: |
+          VERSION="${{ steps.version.outputs.base_version }}"
+          HEAD_SHA=$(git rev-parse HEAD)
+
+          # Find existing rc tags for this version
+          LATEST_RC=$(git tag -l "v${VERSION}-rc.*" | sort -V | tail -1)
+
+          if [ -n "$LATEST_RC" ]; then
+            RC_SHA=$(git rev-list -n 1 "$LATEST_RC")
+            if [ "$HEAD_SHA" = "$RC_SHA" ]; then
+              echo "skip=true" >> "$GITHUB_OUTPUT"
+              echo "latest_rc=${LATEST_RC}" >> "$GITHUB_OUTPUT"
+              echo "Skipping pre-release — ${LATEST_RC} already exists for commit ${HEAD_SHA}"
+              exit 0
+            fi
+          fi
+
+          # No duplicate — determine next RC number
+          LAST_RC=$(echo "$LATEST_RC" | grep -oP 'rc\.\K\d+' || echo "0")
+          NEXT_RC=$((LAST_RC + 1))
+          TAG="v${VERSION}-rc.${NEXT_RC}"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+
+      - name: Find existing bot comment
+        uses: peter-evans/find-comment@v3
+        id: find-comment
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: 'github-actions[bot]'
+          body-includes: '<!-- pre-release -->'
+
+      - name: Post skip comment
+        if: steps.rc.outputs.skip == 'true'
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          comment-id: ${{ steps.find-comment.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          edit-mode: replace
+          body: |
+            <!-- pre-release -->
+            **Pre-release skipped**
+
+            `${{ steps.rc.outputs.latest_rc }}` already exists for the current commit. No new changes to release.
+
+      - name: Remove pre-release label (skipped)
+        if: steps.rc.outputs.skip == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.removeLabel({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              name: 'pre-release'
+            });
+
+  build:
+    needs: check
+    if: needs.check.outputs.skip != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build plugin
+        run: pnpm run build
+
+      - name: Create release package
+        run: |
+          TAG="${{ needs.check.outputs.tag }}"
+          VERSION="${TAG#v}"
+          RELEASE_DIR="LetUsReShade"
+          ZIP_NAME="LetUsReShade_v${VERSION}.zip"
+
+          mkdir -p "${RELEASE_DIR}"
+
+          cp -r dist "${RELEASE_DIR}/"
+          cp -r defaults "${RELEASE_DIR}/"
+          cp main.py "${RELEASE_DIR}/"
+          cp package.json "${RELEASE_DIR}/"
+          cp plugin.json "${RELEASE_DIR}/"
+          cp LICENSE "${RELEASE_DIR}/"
+          cp README.md "${RELEASE_DIR}/"
+
+          zip -r "${ZIP_NAME}" "${RELEASE_DIR}"
+
+          echo "ZIP_NAME=${ZIP_NAME}" >> "$GITHUB_ENV"
+
+      - name: Fetch release notes from release-please PR
+        id: notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Fetch the release-please PR body and extract the clean changelog section
+          PR_BODY=$(gh pr view ${{ github.event.pull_request.number }} --json body -q .body)
+
+          # Extract content between first '---' and last '---' (the clean changelog)
+          CHANGELOG=$(echo "$PR_BODY" | awk '/^---$/{if(!found){found=1;next}} /^---$/{exit} found')
+
+          # Prepend the RC tag to the release notes
+          {
+            echo "**${{ needs.check.outputs.tag }}**"
+            echo ""
+            echo "$CHANGELOG"
+          } > release_notes.md
+
+          echo "notes_file=release_notes.md" >> "$GITHUB_OUTPUT"
+
+      - name: Create pre-release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ needs.check.outputs.tag }}"
+          gh release create "$TAG" \
+            "$ZIP_NAME" \
+            --title "$TAG" \
+            --prerelease \
+            --notes-file "${{ steps.notes.outputs.notes_file }}"
+
+      - name: Find existing bot comment
+        uses: peter-evans/find-comment@v3
+        id: find-comment
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: 'github-actions[bot]'
+          body-includes: '<!-- pre-release -->'
+
+      - name: Post or update comment
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          comment-id: ${{ steps.find-comment.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          edit-mode: replace
+          body: |
+            <!-- pre-release -->
+            **Pre-release: `${{ needs.check.outputs.tag }}`**
+
+            [Download from releases](${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ needs.check.outputs.tag }})
+
+            *Created: ${{ github.event.pull_request.updated_at }}*
+
+      - name: Remove pre-release label
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.removeLabel({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              name: 'pre-release'
+            });
