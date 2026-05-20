@@ -9,11 +9,15 @@ permissions:
   pull-requests: write
 
 jobs:
-  pre-release:
+  check:
     if: >-
       github.event.label.name == 'pre-release' &&
       startsWith(github.event.pull_request.head.ref, 'release-please--')
     runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.rc.outputs.tag }}
+      skip: ${{ steps.rc.outputs.skip }}
+      latest_rc: ${{ steps.rc.outputs.latest_rc }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -32,16 +36,74 @@ jobs:
           fi
           echo "base_version=${VERSION}" >> "$GITHUB_OUTPUT"
 
-      - name: Determine RC number
+      - name: Determine RC number and check for duplicates
         id: rc
         run: |
           VERSION="${{ steps.version.outputs.base_version }}"
-          # Find existing rc tags for this version and increment
-          LAST_RC=$(git tag -l "v${VERSION}-rc.*" | sort -V | tail -1 | grep -oP 'rc\.\K\d+' || echo "0")
+          HEAD_SHA=$(git rev-parse HEAD)
+
+          # Find existing rc tags for this version
+          LATEST_RC=$(git tag -l "v${VERSION}-rc.*" | sort -V | tail -1)
+
+          if [ -n "$LATEST_RC" ]; then
+            RC_SHA=$(git rev-list -n 1 "$LATEST_RC")
+            if [ "$HEAD_SHA" = "$RC_SHA" ]; then
+              echo "skip=true" >> "$GITHUB_OUTPUT"
+              echo "latest_rc=${LATEST_RC}" >> "$GITHUB_OUTPUT"
+              echo "Skipping pre-release — ${LATEST_RC} already exists for commit ${HEAD_SHA}"
+              exit 0
+            fi
+          fi
+
+          # No duplicate — determine next RC number
+          LAST_RC=$(echo "$LATEST_RC" | grep -oP 'rc\.\K\d+' || echo "0")
           NEXT_RC=$((LAST_RC + 1))
           TAG="v${VERSION}-rc.${NEXT_RC}"
           echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
-          echo "rc_number=${NEXT_RC}" >> "$GITHUB_OUTPUT"
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+
+      - name: Find existing bot comment
+        uses: peter-evans/find-comment@v3
+        id: find-comment
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: 'github-actions[bot]'
+          body-includes: '<!-- pre-release -->'
+
+      - name: Post skip comment
+        if: steps.rc.outputs.skip == 'true'
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          comment-id: ${{ steps.find-comment.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          edit-mode: replace
+          body: |
+            <!-- pre-release -->
+            **Pre-release skipped**
+
+            `${{ steps.rc.outputs.latest_rc }}` already exists for the current commit. No new changes to release.
+
+      - name: Remove pre-release label (skipped)
+        if: steps.rc.outputs.skip == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.removeLabel({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              name: 'pre-release'
+            });
+
+  build:
+    needs: check
+    if: needs.check.outputs.skip != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 1
 
       - uses: pnpm/action-setup@v4
         with:
@@ -60,7 +122,7 @@ jobs:
 
       - name: Create release package
         run: |
-          TAG="${{ steps.rc.outputs.tag }}"
+          TAG="${{ needs.check.outputs.tag }}"
           VERSION="${TAG#v}"
           RELEASE_DIR="LetUsReShade"
           ZIP_NAME="LetUsReShade_v${VERSION}.zip"
@@ -85,13 +147,6 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # Fetch the release-please PR body and extract the clean changelog section
-          # The PR body format is:
-          #   :robot: I have created a release *beep* *boop*
-          #   ---
-          #   ## [1.9.0](...) (2026-05-19)
-          #   ...
-          #   ---
-          #   This PR was generated with [Release Please]...
           PR_BODY=$(gh pr view ${{ github.event.pull_request.number }} --json body -q .body)
 
           # Extract content between first '---' and last '---' (the clean changelog)
@@ -99,7 +154,7 @@ jobs:
 
           # Prepend the RC tag to the release notes
           {
-            echo "**${{ steps.rc.outputs.tag }}**"
+            echo "**${{ needs.check.outputs.tag }}**"
             echo ""
             echo "$CHANGELOG"
           } > release_notes.md
@@ -110,7 +165,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG="${{ steps.rc.outputs.tag }}"
+          TAG="${{ needs.check.outputs.tag }}"
           gh release create "$TAG" \
             "$ZIP_NAME" \
             --title "$TAG" \
@@ -133,9 +188,9 @@ jobs:
           edit-mode: replace
           body: |
             <!-- pre-release -->
-            **Pre-release: `${{ steps.rc.outputs.tag }}`**
+            **Pre-release: `${{ needs.check.outputs.tag }}`**
 
-            [Download from releases](${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ steps.rc.outputs.tag }})
+            [Download from releases](${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ needs.check.outputs.tag }})
 
             *Created: ${{ github.event.pull_request.updated_at }}*
 
