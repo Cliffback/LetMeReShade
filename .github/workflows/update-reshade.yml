@@ -38,4 +38,4 @@ jobs:
           branch: chore/auto-reshade-update
           delete-branch: true
           labels: automated,dependencies
-          reviewers: Cliffback
+          reviewers: ${{ github.repository_owner }}
