@@ -43,6 +43,54 @@ jobs:
           echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
           echo "rc_number=${NEXT_RC}" >> "$GITHUB_OUTPUT"
 
+      - name: Skip if same commit as last RC
+        id: skip-check
+        run: |
+          VERSION="${{ steps.version.outputs.base_version }}"
+          HEAD_SHA=$(git rev-parse HEAD)
+
+          # Find the latest RC tag for this version
+          LATEST_RC=$(git tag -l "v${VERSION}-rc.*" | sort -V | tail -1)
+
+          if [ -n "$LATEST_RC" ]; then
+            RC_SHA=$(git rev-list -n 1 "$LATEST_RC")
+            if [ "$HEAD_SHA" = "$RC_SHA" ]; then
+              echo "skip=true" >> "$GITHUB_OUTPUT"
+              echo "latest_rc=${LATEST_RC}" >> "$GITHUB_OUTPUT"
+              echo "Skipping pre-release — ${LATEST_RC} already exists for commit ${HEAD_SHA}"
+              exit 0
+            fi
+          fi
+
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+
+      - name: Post skip comment
+        if: steps.skip-check.outputs.skip == 'true'
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            <!-- pre-release -->
+            **Pre-release skipped**
+
+            `${{ steps.skip-check.outputs.latest_rc }}` already exists for the current commit. No new changes to release.
+
+      - name: Remove pre-release label (skipped)
+        if: steps.skip-check.outputs.skip == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.removeLabel({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              name: 'pre-release'
+            });
+
+      - name: Early exit if skipped
+        if: steps.skip-check.outputs.skip == 'true'
+        run: exit 0
+
       - uses: pnpm/action-setup@v4
         with:
           version: 9
