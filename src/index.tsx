@@ -11,6 +11,7 @@ import {
 import { useEffect, useState } from 'react';
 import { IoMdColorPalette } from 'react-icons/io';
 import HeroicGamesSection from './HeroicGamesSection';
+import NonSteamGamesSection from './NonSteamGamesSection';
 import ShaderSelectionModal from './ShaderSelectionModal';
 import SteamGamesSection from './SteamGamesSection';
 import { getVersionOptions, VersionOption } from './versionOptions';
@@ -807,6 +808,7 @@ export default definePlugin(() => ({
     <>
       <ReShadeInstallerSection />
       <SteamGamesSection />
+      <NonSteamGamesSection />
       <HeroicGamesSection />
     </>
   ),

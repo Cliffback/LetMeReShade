@@ -16,6 +16,7 @@
     "lint:py:fix": "python3 -m ruff check --fix main.py",
     "format:py": "python3 -m ruff format main.py",
     "dev-build": "node scripts/create-dev-build.js",
+    "dev-test": "bash scripts/dev-test.sh",
     "prepare": "husky"
   },
   "repository": {
@@ -40,7 +41,7 @@
     "@biomejs/biome": "^2.2.5",
     "@decky/rollup": "^1.0.2",
     "@decky/ui": "^4.7.2",
-    "@types/react": "18.3.28",
+    "@types/react": "18.3.31",
     "@types/react-dom": "18.3.7",
     "@types/webpack": "^5.28.5",
     "husky": "^9.1.7",
@@ -65,6 +66,16 @@
   "remote_binary_bundling": false,
   "remote_binary": [
     {
+      "name": "reshade_6.8.0.exe",
+      "url": "https://reshade.me/downloads/ReShade_Setup_6.8.0.exe",
+      "sha256hash": "207aea16205fbf952bc8fe1879966672454cf04002e7ad34237c7990a5b3c0b4"
+    },
+    {
+      "name": "reshade_6.8.0_addon.exe",
+      "url": "https://reshade.me/downloads/ReShade_Setup_6.8.0_Addon.exe",
+      "sha256hash": "afe4c8f13048306307983b8b3d41d5bf00a86820440b0e57dea10950e1176445"
+    },
+    {
       "name": "reshade_6.7.3.exe",
       "url": "https://reshade.me/downloads/ReShade_Setup_6.7.3.exe",
       "sha256hash": "56791fd065358e899c581ebefe2ad871399b7c7ae83fb85e1154c08a75a44147"
@@ -83,16 +94,6 @@
       "name": "reshade_6.6.2_addon.exe",
       "url": "https://reshade.me/downloads/ReShade_Setup_6.6.2_Addon.exe",
       "sha256hash": "208d710e21e15cd871fe37256bf97aad587620b4602c389453b7e099b7ba3217"
-    },
-    {
-      "name": "reshade_6.5.1.exe",
-      "url": "https://reshade.me/downloads/ReShade_Setup_6.5.1.exe",
-      "sha256hash": "c384e89427865e119db4daf18c2c225b951a4cd07dbff92b65caf68c2a95ace0"
-    },
-    {
-      "name": "reshade_6.5.1_addon.exe",
-      "url": "https://reshade.me/downloads/ReShade_Setup_6.5.1_Addon.exe",
-      "sha256hash": "3be164186103dcf126af3d75d8efdf850c4ed9f88919505c16a52e6d0ef135a7"
     },
     {
       "name": "d3dcompiler_47.dll",

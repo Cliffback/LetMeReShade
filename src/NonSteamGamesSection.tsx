@@ -10,12 +10,11 @@ import {
 import { useEffect, useState } from 'react';
 
 // Define interfaces
-interface HeroicGameInfo {
+interface NonSteamGameInfo {
   name: string;
-  path: string;
-  app_id?: string;
-  config_file?: string;
-  config_key?: string;
+  exe: string;
+  start_dir: string;
+  appid: string;
 }
 
 interface DllOverride {
@@ -23,17 +22,12 @@ interface DllOverride {
   value: string;
 }
 
-interface HeroicResponse {
+interface NonSteamResponse {
   status: string;
   message?: string;
   output?: string;
-  games?: HeroicGameInfo[];
-  config_file?: string;
-  config_key?: string;
+  games?: NonSteamGameInfo[];
   api?: string;
-  architecture?: string;
-  score?: number;
-  details?: string[];
 }
 
 interface PathCheckResponse {
@@ -61,47 +55,46 @@ interface DetectionResult {
   message?: string;
 }
 
-interface HeroicExecutableDetectionResponse {
+interface NonSteamExecutableDetectionResponse {
   status: string;
-  heroic_enhanced_detection_result?: DetectionResult;
+  non_steam_detection_result?: DetectionResult;
   recommended_method?: string;
   message?: string;
 }
 
 // Define callables
-const findHeroicGames = callable<[], HeroicResponse>('find_heroic_games');
-const installReshadeForHeroicGame = callable<
+const listNonSteamGames = callable<[], NonSteamResponse>(
+  'list_non_steam_games',
+);
+const findNonSteamGameExecutablePath = callable<
   [string, string, string],
-  HeroicResponse
->('install_reshade_for_heroic_game');
-const uninstallReshadeForHeroicGame = callable<[string], HeroicResponse>(
-  'uninstall_reshade_for_heroic_game',
+  NonSteamExecutableDetectionResponse
+>('find_non_steam_game_executable_path');
+const installReshadeForNonSteamGame = callable<
+  [string, string, string],
+  NonSteamResponse
+>('install_reshade_for_non_steam_game');
+const uninstallReshadeForNonSteamGame = callable<[string], NonSteamResponse>(
+  'uninstall_reshade_for_non_steam_game',
 );
-const updateHeroicConfig = callable<[string, string, string], HeroicResponse>(
-  'update_heroic_config',
-);
-const findHeroicGameConfig = callable<[string, string], HeroicResponse>(
-  'find_heroic_game_config',
-);
-const detectHeroicGameApi = callable<[string], HeroicResponse>(
-  'detect_heroic_game_api',
-);
-const findHeroicGameExecutablePath = callable<
-  [string, string],
-  HeroicExecutableDetectionResponse
->('find_heroic_game_executable_path');
+const detectHeroicGameApi = callable<
+  [string],
+  { status: string; api?: string; message?: string }
+>('detect_heroic_game_api');
 const checkReShadePath = callable<[], PathCheckResponse>('check_reshade_path');
 const logError = callable<[string], void>('log_error');
 
-const HeroicGamesSection = () => {
-  const [heroicGames, setHeroicGames] = useState<HeroicGameInfo[]>([]);
-  const [selectedGame, setSelectedGame] = useState<HeroicGameInfo | null>(null);
+const NonSteamGamesSection = () => {
+  const [games, setGames] = useState<NonSteamGameInfo[]>([]);
+  const [selectedGame, setSelectedGame] = useState<NonSteamGameInfo | null>(
+    null,
+  );
   const [selectedDll, setSelectedDll] = useState<DllOverride | null>(null);
   const [result, setResult] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
   const [apiDetecting, setApiDetecting] = useState<boolean>(false);
   const [executableDetection, setExecutableDetection] =
-    useState<HeroicExecutableDetectionResponse | null>(null);
+    useState<NonSteamExecutableDetectionResponse | null>(null);
   const [checkingExecutable, setCheckingExecutable] = useState<boolean>(false);
   const [selectedExecutablePath, setSelectedExecutablePath] =
     useState<string>('');
@@ -118,30 +111,28 @@ const HeroicGamesSection = () => {
   ];
 
   useEffect(() => {
-    const loadHeroicGames = async () => {
+    const loadGames = async () => {
       try {
         setLoading(true);
-        const response = await findHeroicGames();
+        const response = await listNonSteamGames();
         if (response.status === 'success' && response.games) {
-          setHeroicGames(response.games);
+          setGames(response.games);
         } else {
           setResult(
-            `Failed to load Heroic games: ${response.message || 'Unknown error'}`,
+            `Failed to load non-Steam games: ${response.message || 'Unknown error'}`,
           );
         }
       } catch (error) {
         setResult(
-          `Error loading Heroic games: ${error instanceof Error ? error.message : String(error)}`,
+          `Error loading non-Steam games: ${error instanceof Error ? error.message : String(error)}`,
         );
-        await logError(
-          `HeroicGamesSection -> loadHeroicGames: ${String(error)}`,
-        );
+        await logError(`NonSteamGamesSection -> loadGames: ${String(error)}`);
       } finally {
         setLoading(false);
       }
     };
 
-    loadHeroicGames();
+    loadGames();
   }, []);
 
   // Check executable detection when a game is selected
@@ -155,23 +146,26 @@ const HeroicGamesSection = () => {
 
       try {
         setCheckingExecutable(true);
-        const detection = await findHeroicGameExecutablePath(
-          selectedGame.path,
+        const detection = await findNonSteamGameExecutablePath(
+          selectedGame.exe,
+          selectedGame.start_dir,
           selectedGame.name,
         );
         setExecutableDetection(detection);
 
-        // Set default selected executable path based on recommended method
+        // Set default selected executable path based on detection
         if (
           detection.status === 'success' &&
-          detection.heroic_enhanced_detection_result?.status === 'success'
+          detection.non_steam_detection_result?.status === 'success'
         ) {
           setSelectedExecutablePath(
-            detection.heroic_enhanced_detection_result.executable_path || '',
+            detection.non_steam_detection_result.executable_path || '',
           );
         }
       } catch (error) {
-        await logError(`Heroic executable detection error: ${String(error)}`);
+        await logError(
+          `Non-Steam executable detection error: ${String(error)}`,
+        );
         setExecutableDetection(null);
         setSelectedExecutablePath('');
       } finally {
@@ -200,13 +194,22 @@ const HeroicGamesSection = () => {
         return;
       }
 
+      // Determine the game directory for installation
+      const gameDir = selectedExecutablePath
+        ? selectedExecutablePath.substring(
+            0,
+            selectedExecutablePath.lastIndexOf('/'),
+          )
+        : selectedGame.start_dir ||
+          selectedGame.exe.substring(0, selectedGame.exe.lastIndexOf('/'));
+
       // If automatic is selected, detect the API
       let finalDllOverride = selectedDll.value;
       if (finalDllOverride === 'auto') {
         setApiDetecting(true);
         setResult('Detecting best API for your game...');
 
-        const detectionResponse = await detectHeroicGameApi(selectedGame.path);
+        const detectionResponse = await detectHeroicGameApi(gameDir);
 
         if (detectionResponse.status === 'success' && detectionResponse.api) {
           finalDllOverride = detectionResponse.api;
@@ -214,7 +217,7 @@ const HeroicGamesSection = () => {
             `Detected ${finalDllOverride.toUpperCase()} as the best API for this game.`,
           );
         } else {
-          finalDllOverride = 'dxgi'; // Default to dxgi if detection fails
+          finalDllOverride = 'dxgi';
           setResult(
             `API detection failed: ${detectionResponse.message || 'Unknown error'}. Using DXGI as fallback.`,
           );
@@ -222,7 +225,6 @@ const HeroicGamesSection = () => {
         setApiDetecting(false);
       }
 
-      // Create enhanced confirmation dialog with detection info
       const getDetectionInfo = () => {
         let info = `Are you sure you want to install ReShade for ${selectedGame.name} with ${finalDllOverride.toUpperCase()} API?`;
 
@@ -237,92 +239,32 @@ const HeroicGamesSection = () => {
 
       showModal(
         <ConfirmModal
-          strTitle="Confirm Heroic Game Patch"
+          strTitle="Confirm Non-Steam Game Patch"
           strDescription={getDetectionInfo()}
           strOKButtonText="Install"
           strCancelButtonText="Cancel"
           onOK={async () => {
             setResult('Installing ReShade...');
 
-            // Install ReShade files with selected executable path
-            const installResponse = await installReshadeForHeroicGame(
-              selectedGame.path,
+            const installResponse = await installReshadeForNonSteamGame(
+              gameDir,
               finalDllOverride,
               selectedExecutablePath,
             );
 
-            if (installResponse.status !== 'success') {
-              setResult(
-                `Failed to install ReShade: ${installResponse.message || 'Unknown error'}`,
-              );
-              return;
-            }
-
-            let configFound = false;
-
-            // Try to update config if we already have config information
-            if (selectedGame.config_file && selectedGame.config_key) {
-              const configResponse = await updateHeroicConfig(
-                selectedGame.config_file,
-                selectedGame.config_key,
-                finalDllOverride,
-              );
-
-              if (configResponse.status === 'success') {
-                configFound = true;
-                let successMessage = `ReShade installed successfully for ${selectedGame.name} with ${finalDllOverride.toUpperCase()} API.\nHeroic configuration has been updated. Press HOME key in-game to open ReShade overlay.`;
-
-                if (selectedExecutablePath) {
-                  const fileName = selectedExecutablePath.split('/').pop();
-                  successMessage += `\n\nInstalled to: ${fileName}`;
-                }
-
-                setResult(successMessage);
-              }
-            }
-
-            // If config wasn't found or update failed, try to find config
-            if (!configFound) {
-              const configResponse = await findHeroicGameConfig(
-                selectedGame.path,
-                selectedGame.name,
-              );
-
-              if (
-                configResponse.status === 'success' &&
-                configResponse.config_file &&
-                configResponse.config_key
-              ) {
-                const updateResponse = await updateHeroicConfig(
-                  configResponse.config_file,
-                  configResponse.config_key,
-                  finalDllOverride,
-                );
-
-                if (updateResponse.status === 'success') {
-                  configFound = true;
-                  let successMessage = `ReShade installed successfully for ${selectedGame.name} with ${finalDllOverride.toUpperCase()} API.\nHeroic configuration has been updated. Press HOME key in-game to open ReShade overlay.`;
-
-                  if (selectedExecutablePath) {
-                    const fileName = selectedExecutablePath.split('/').pop();
-                    successMessage += `\n\nInstalled to: ${fileName}`;
-                  }
-
-                  setResult(successMessage);
-                }
-              }
-            }
-
-            // If config still wasn't found, show a message with manual instructions
-            if (!configFound) {
-              let manualMessage = `ReShade installed successfully for ${selectedGame.name} with ${finalDllOverride.toUpperCase()} API, but could not update Heroic configuration.\nYou will need to manually add WINEDLLOVERRIDES="d3dcompiler_47=n;${finalDllOverride}=n,b" to the game's launch options in Heroic.`;
+            if (installResponse.status === 'success') {
+              let successMessage = `ReShade installed successfully for ${selectedGame.name} with ${finalDllOverride.toUpperCase()} API.\nPress HOME key in-game to open ReShade overlay.`;
 
               if (selectedExecutablePath) {
                 const fileName = selectedExecutablePath.split('/').pop();
-                manualMessage += `\n\nInstalled to: ${fileName}`;
+                successMessage += `\n\nInstalled to: ${fileName}`;
               }
 
-              setResult(manualMessage);
+              setResult(successMessage);
+            } else {
+              setResult(
+                `Failed to install ReShade: ${installResponse.message || 'Unknown error'}`,
+              );
             }
           }}
         />,
@@ -332,7 +274,7 @@ const HeroicGamesSection = () => {
         `Error: ${error instanceof Error ? error.message : String(error)}`,
       );
       await logError(
-        `HeroicGamesSection -> handleInstallReShade: ${String(error)}`,
+        `NonSteamGamesSection -> handleInstallReShade: ${String(error)}`,
       );
     }
   };
@@ -344,12 +286,19 @@ const HeroicGamesSection = () => {
     }
 
     try {
-      // Check if ReShade is installed first
       const reshadeCheck = await checkReShadePath();
       if (!reshadeCheck.exists) {
         setResult('ReShade is not installed.');
         return;
       }
+
+      const gameDir = selectedExecutablePath
+        ? selectedExecutablePath.substring(
+            0,
+            selectedExecutablePath.lastIndexOf('/'),
+          )
+        : selectedGame.start_dir ||
+          selectedGame.exe.substring(0, selectedGame.exe.lastIndexOf('/'));
 
       showModal(
         <ConfirmModal
@@ -360,49 +309,13 @@ const HeroicGamesSection = () => {
           onOK={async () => {
             setResult('Uninstalling ReShade...');
 
-            const uninstallResponse = await uninstallReshadeForHeroicGame(
-              selectedGame.path,
-            );
+            const uninstallResponse =
+              await uninstallReshadeForNonSteamGame(gameDir);
 
             if (uninstallResponse.status === 'success') {
               setResult(
                 `ReShade uninstalled successfully from ${selectedGame.name}.`,
               );
-
-              // Try to update config if we have config information to remove the env var
-              let configUpdated = false;
-
-              if (selectedGame.config_file && selectedGame.config_key) {
-                const updateResponse = await updateHeroicConfig(
-                  selectedGame.config_file,
-                  selectedGame.config_key,
-                  'remove',
-                );
-
-                if (updateResponse.status === 'success') {
-                  configUpdated = true;
-                }
-              }
-
-              // If config wasn't updated, try to find config
-              if (!configUpdated) {
-                const configResponse = await findHeroicGameConfig(
-                  selectedGame.path,
-                  selectedGame.name,
-                );
-
-                if (
-                  configResponse.status === 'success' &&
-                  configResponse.config_file &&
-                  configResponse.config_key
-                ) {
-                  await updateHeroicConfig(
-                    configResponse.config_file,
-                    configResponse.config_key,
-                    'remove',
-                  );
-                }
-              }
             } else {
               setResult(
                 `Failed to uninstall ReShade: ${uninstallResponse.message || 'Unknown error'}`,
@@ -416,7 +329,7 @@ const HeroicGamesSection = () => {
         `Error: ${error instanceof Error ? error.message : String(error)}`,
       );
       await logError(
-        `HeroicGamesSection -> handleUninstallReShade: ${String(error)}`,
+        `NonSteamGamesSection -> handleUninstallReShade: ${String(error)}`,
       );
     }
   };
@@ -425,7 +338,7 @@ const HeroicGamesSection = () => {
     if (!executableDetection || executableDetection.status !== 'success')
       return null;
 
-    const enhancedResult = executableDetection.heroic_enhanced_detection_result;
+    const detectionResult = executableDetection.non_steam_detection_result;
 
     const executableOptions: Array<{
       path: string;
@@ -437,21 +350,20 @@ const HeroicGamesSection = () => {
       displayLabel: string;
     }> = [];
 
-    // Add enhanced detection results if available
     if (
-      enhancedResult?.status === 'success' &&
-      enhancedResult.all_executables
+      detectionResult?.status === 'success' &&
+      detectionResult.all_executables
     ) {
-      enhancedResult.all_executables.forEach((exe, index) => {
-        const isRecommended = exe.path === enhancedResult.executable_path;
+      detectionResult.all_executables.forEach((exe, index) => {
+        const isRecommended = exe.path === detectionResult.executable_path;
         executableOptions.push({
           path: exe.path,
           filename: exe.filename,
-          method: 'Enhanced Detection',
+          method: 'Non-Steam Detection',
           isRecommended,
           score: exe.score,
           relative_path: exe.relative_path || `Directory ${index + 1}`,
-          displayLabel: `${exe.filename} ${isRecommended ? '(RECOMMENDED)' : ''} - ${exe.relative_path || 'Enhanced'} (Score: ${exe.score || 0})`,
+          displayLabel: `${exe.filename} ${isRecommended ? '(RECOMMENDED)' : ''} - ${exe.relative_path || 'Detected'} (Score: ${exe.score || 0})`,
         });
       });
     }
@@ -477,7 +389,7 @@ const HeroicGamesSection = () => {
                 fontSize: '0.95em',
               }}
             >
-              🎯 Executable Detection Results ({executableOptions.length} found)
+              Executable Detection Results ({executableOptions.length} found)
             </div>
           </div>
         </PanelSectionRow>
@@ -496,7 +408,6 @@ const HeroicGamesSection = () => {
           />
         </PanelSectionRow>
 
-        {/* Show details of currently selected executable */}
         {selectedExecutablePath &&
           (() => {
             const selectedOption = executableOptions.find(
@@ -563,23 +474,23 @@ const HeroicGamesSection = () => {
   };
 
   return (
-    <PanelSection title="Heroic Games">
+    <PanelSection title="Non-Steam Games">
       {loading ? (
         <PanelSectionRow>
-          <div>Loading Heroic games...</div>
+          <div>Loading non-Steam games...</div>
         </PanelSectionRow>
-      ) : heroicGames.length === 0 ? (
+      ) : games.length === 0 ? (
         <PanelSectionRow>
           <div>
-            No Heroic games found. Make sure Heroic is installed and you have
-            games installed.
+            No non-Steam game shortcuts found. Add games via Steam's "Add a
+            Non-Steam Game" option.
           </div>
         </PanelSectionRow>
       ) : (
         <>
           <PanelSectionRow>
             <DropdownItem
-              rgOptions={heroicGames.map((game) => ({
+              rgOptions={games.map((game) => ({
                 data: game,
                 label: game.name,
               }))}
@@ -588,14 +499,14 @@ const HeroicGamesSection = () => {
                 setSelectedGame(option.data);
                 setResult('');
               }}
-              strDefaultLabel="Select a Heroic game..."
+              strDefaultLabel="Select a non-Steam game..."
             />
           </PanelSectionRow>
 
           {selectedGame && checkingExecutable && (
             <PanelSectionRow>
               <div style={{ fontSize: '0.9em', opacity: 0.7 }}>
-                🔍 Analyzing game... Detecting executable
+                Analyzing game... Detecting executable
               </div>
             </PanelSectionRow>
           )}
@@ -647,12 +558,12 @@ const HeroicGamesSection = () => {
                   onClick={handleInstallReShade}
                   disabled={!selectedDll || apiDetecting}
                 >
-                  {apiDetecting ? 'Detecting API...' : '🔧 Install ReShade'}
+                  {apiDetecting ? 'Detecting API...' : 'Install ReShade'}
                 </ButtonItem>
               </PanelSectionRow>
               <PanelSectionRow>
                 <ButtonItem layout="below" onClick={handleUninstallReShade}>
-                  🗑️ Uninstall ReShade
+                  Uninstall ReShade
                 </ButtonItem>
               </PanelSectionRow>
             </>
@@ -663,4 +574,4 @@ const HeroicGamesSection = () => {
   );
 };
 
-export default HeroicGamesSection;
+export default NonSteamGamesSection;

@@ -14,7 +14,7 @@ jobs:
   check-and-update:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: Check for new ReShade version
         id: update
@@ -38,3 +38,4 @@ jobs:
           branch: chore/auto-reshade-update
           delete-branch: true
           labels: automated,dependencies
+          reviewers: ${{ github.repository_owner }}
