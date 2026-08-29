@@ -19,7 +19,7 @@ jobs:
 
       - uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: 11
 
       - uses: actions/setup-node@v6
         with:
@@ -56,7 +56,7 @@ jobs:
           echo "BUILD_DATE=$(date -u +%Y-%m-%d)" >> "$GITHUB_ENV"
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         id: upload
         with:
           name: experimental-build-${{ env.SHORT_SHA }}
@@ -84,7 +84,7 @@ jobs:
             <sub>Built on ${{ env.BUILD_DATE }}</sub>
 
       - name: Remove test-build label
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             await github.rest.issues.removeLabel({

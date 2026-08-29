@@ -85,7 +85,7 @@ jobs:
 
       - name: Remove pre-release label (skipped)
         if: steps.rc.outputs.skip == 'true'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             await github.rest.issues.removeLabel({
@@ -107,7 +107,7 @@ jobs:
 
       - uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: 11
 
       - uses: actions/setup-node@v6
         with:
@@ -195,7 +195,7 @@ jobs:
             *Created: ${{ github.event.pull_request.updated_at }}*
 
       - name: Remove pre-release label
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             await github.rest.issues.removeLabel({
