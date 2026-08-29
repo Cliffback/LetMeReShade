@@ -348,7 +348,7 @@ class Plugin:
             'DELETE_RESHADE_FILES': '0',
             'FORCE_RESHADE_UPDATE_CHECK': '0',
             'RESHADE_ADDON_SUPPORT': '0',
-            'RESHADE_VERSION': '6.7.3',
+            'RESHADE_VERSION': '6.8.0',
             'AUTOHDR_ENABLED': '0',
         }
         # Main paths for ReShade
