@@ -59,4 +59,4 @@ jobs:
         with:
           name: test-build
           path: LetUsReShade_v*.zip
-          retention-days: 7
+          retention-days: 90
